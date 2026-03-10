@@ -1,0 +1,43 @@
+# PROVENA Trinity - Encoder/Decoder Training Configuration
+# ───────────────────────────────────────────────────────────
+# For use with: python -m src.watermarking.pixel.train --config configs/encoder_decoder_config.yaml
+
+# Model Architecture
+payload_bits: 160           # 128-bit UUID + 32-bit timestamp
+image_size: 256             # Training image resolution (H=W)
+feature_dim: 256            # Internal feature dimension
+num_cross_attn_layers: 4    # Cross-attention layers in encoder
+num_transformer_layers: 4   # Self-attention layers in decoder
+residual_scale: 3.0         # Max residual magnitude (in pixel values 0-255)
+
+# Training Hyperparameters
+batch_size: 32
+learning_rate: 0.0001       # 1e-4 (AdamW)
+weight_decay: 0.00001       # 1e-5
+epochs: 50
+lambda_accuracy: 0.7        # Weight for watermark accuracy loss (BCE)
+lambda_quality: 0.3         # Weight for perceptual quality loss (LPIPS + MSE)
+
+# Augmentation (Curriculum)
+augmentation_warmup_epochs: 5   # No augmentation for first N epochs
+max_augmentation_strength: 0.8  # Maximum augmentation intensity
+
+# Data
+train_samples: 40000        # Replace with real dataset path
+val_samples: 5000
+test_samples: 5000
+
+# Checkpointing
+checkpoint_dir: "checkpoints/pixel_watermark"
+log_interval: 10            # Log every N batches
+
+# Quality Targets (PRD)
+target_psnr: 42.0           # dB (imperceptible)
+target_ssim: 0.98
+target_bit_accuracy: 0.99   # On clean images
+
+# Adversarial Training (Phase 2)
+adversarial_epochs: 100
+lr_attacker: 0.0001
+lambda_attacker_quality: 0.5
+attacker_warmup_epochs: 5

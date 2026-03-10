@@ -53,7 +53,10 @@ class RegistryService:
         signature: bytes,
         public_key: bytes,
         key_id: str,
-        prompt_hash: Optional[str] = None
+        prompt_hash: Optional[str] = None,
+        # Trinity v2 flags
+        latent_watermark_present: bool = False,
+        pixel_watermark_present:  bool = False,
     ) -> Dict[str, Any]:
         """
         Register a new provenance record.
@@ -102,15 +105,18 @@ class RegistryService:
         
         # Prepare record
         record = {
-            'image_id': image_id,
-            'model_id': model_id,
-            'timestamp': timestamp,
-            'prompt_hash': prompt_hash,
-            'watermark_payload': watermark_payload,
-            'perceptual_hash': perceptual_hash,
-            'signature': signature,
-            'public_key': public_key,
-            'key_id': key_id
+            'image_id':                  image_id,
+            'model_id':                  model_id,
+            'timestamp':                 timestamp,
+            'prompt_hash':               prompt_hash,
+            'watermark_payload':         watermark_payload,
+            'perceptual_hash':           perceptual_hash,
+            'signature':                 signature,
+            'public_key':                public_key,
+            'key_id':                    key_id,
+            # Trinity v2
+            'latent_watermark_present':  latent_watermark_present,
+            'pixel_watermark_present':   pixel_watermark_present,
         }
         
         # Insert into database
@@ -172,13 +178,16 @@ class RegistryService:
         if not perceptual_hash or len(perceptual_hash) < 8:
             return {'valid': False, 'error': 'Invalid perceptual hash'}
         
-        # Validate signature (Ed25519 = 64 bytes)
-        if not isinstance(signature, bytes) or len(signature) != 64:
-            return {'valid': False, 'error': 'Invalid signature (must be 64 bytes for Ed25519)'}
-        
-        # Validate public key
-        if not isinstance(public_key, bytes) or len(public_key) < 50:
-            return {'valid': False, 'error': 'Invalid public key'}
+        # Validate signature — allow empty bytes in latent-only / unsigned mode
+        if not isinstance(signature, bytes):
+            return {'valid': False, 'error': 'signature must be bytes'}
+        if len(signature) not in (0, 64):
+            return {'valid': False, 'error': 'Invalid signature length (must be 0 or 64 bytes)'}
+
+        # Validate public key — skip if unsigned
+        if len(signature) == 64:
+            if not isinstance(public_key, bytes) or len(public_key) < 32:
+                return {'valid': False, 'error': 'Invalid public key'}
         
         # Validate key_id
         if not key_id or len(key_id) < 8:

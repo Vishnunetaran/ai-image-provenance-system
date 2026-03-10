@@ -26,33 +26,40 @@ class ProvenanceDatabase:
     - Cryptographically bound: Each record includes signature
     """
     
-    SCHEMA_VERSION = 1
+    SCHEMA_VERSION = 2
     
     # SQL schema definition
     CREATE_TABLE_SQL = """
     CREATE TABLE IF NOT EXISTS provenance_records (
         -- Primary identifier
         image_id TEXT PRIMARY KEY NOT NULL,
-        
+
         -- Generation metadata
         model_id TEXT NOT NULL,
         timestamp TEXT NOT NULL,
         prompt_hash TEXT,
-        
+
         -- Watermark data
         watermark_payload BLOB NOT NULL,
-        
+
         -- Perceptual hash for tolerant matching
         perceptual_hash TEXT NOT NULL,
-        
+
         -- Cryptographic binding
         signature BLOB NOT NULL,
         public_key BLOB NOT NULL,
         key_id TEXT NOT NULL,
-        
+
         -- Audit fields
         created_at TEXT NOT NULL,
-        
+
+        -- ── PROVENA Trinity v2 columns ─────────────────────────────────
+        latent_watermark_present INTEGER DEFAULT 0,
+        pixel_watermark_present  INTEGER DEFAULT 0,
+        detection_confidence     REAL,
+        detection_layers         TEXT,    -- JSON blob of last detection result
+        last_detected_at         TEXT,
+
         -- Ensure no duplicate timestamps for same model
         UNIQUE(model_id, timestamp)
     );
@@ -120,11 +127,13 @@ class ProvenanceDatabase:
                 "INSERT OR IGNORE INTO metadata (key, value) VALUES (?, ?)",
                 ("schema_version", str(self.SCHEMA_VERSION))
             )
-            
+
             conn.commit()
-            
-            logger.info("Database schema initialized successfully")
-    
+
+        # Run migrations for existing databases
+        self.migrate_schema()
+        logger.info("Database schema initialized successfully")
+
     def get_connection(self) -> sqlite3.Connection:
         """
         Get database connection.
@@ -156,6 +165,41 @@ class ProvenanceDatabase:
             (operation, image_id, datetime.utcnow().isoformat(), details)
         )
     
+    def migrate_schema(self) -> None:
+        """
+        Apply incremental schema migrations for existing databases.
+
+        Uses ALTER TABLE to add Trinity v2 columns when upgrading from
+        schema version 1.  Safe to call multiple times (errors are caught).
+        """
+        trinity_columns = [
+            ("latent_watermark_present", "INTEGER DEFAULT 0"),
+            ("pixel_watermark_present",  "INTEGER DEFAULT 0"),
+            ("detection_confidence",     "REAL"),
+            ("detection_layers",         "TEXT"),
+            ("last_detected_at",         "TEXT"),
+        ]
+
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            for col_name, col_def in trinity_columns:
+                try:
+                    cursor.execute(
+                        f"ALTER TABLE provenance_records ADD COLUMN {col_name} {col_def}"
+                    )
+                    logger.info("Migration: added column %s", col_name)
+                except sqlite3.OperationalError:
+                    # Column already exists — expected on re-runs
+                    pass
+            try:
+                cursor.execute(
+                    "INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)",
+                    ("schema_version", str(self.SCHEMA_VERSION))
+                )
+            except Exception:
+                pass
+            conn.commit()
+
     def insert_record(self, record: dict) -> bool:
         """
         Insert a new provenance record.
@@ -195,27 +239,29 @@ class ProvenanceDatabase:
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
-                
-                # Insert record
+
                 cursor.execute(
                     """
                     INSERT INTO provenance_records (
                         image_id, model_id, timestamp, prompt_hash,
                         watermark_payload, perceptual_hash,
-                        signature, public_key, key_id, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        signature, public_key, key_id, created_at,
+                        latent_watermark_present, pixel_watermark_present
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
-                        record['image_id'],
-                        record['model_id'],
-                        record['timestamp'],
-                        record.get('prompt_hash'),
-                        record['watermark_payload'],
-                        record['perceptual_hash'],
-                        record['signature'],
-                        record['public_key'],
-                        record['key_id'],
-                        datetime.utcnow().isoformat()
+                        record["image_id"],
+                        record["model_id"],
+                        record["timestamp"],
+                        record.get("prompt_hash"),
+                        record["watermark_payload"],
+                        record["perceptual_hash"],
+                        record["signature"],
+                        record["public_key"],
+                        record["key_id"],
+                        datetime.utcnow().isoformat(),
+                        int(record.get("latent_watermark_present", False)),
+                        int(record.get("pixel_watermark_present",  False)),
                     )
                 )
                 
