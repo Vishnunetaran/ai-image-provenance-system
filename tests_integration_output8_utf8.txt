@@ -1,0 +1,62 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.11.9, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\vishn\AppData\Local\Programs\Python\Python311\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\vishn\Downloads\cloned_Ai\ai-image-provenance-system
+plugins: anyio-4.8.0
+collecting ... collected 1 item
+
+tests/integration/test_full_register_verify_flow.py::TestFullVerificationFlow::test_end_to_end_flow FAILED [100%]
+
+================================== FAILURES ===================================
+________________ TestFullVerificationFlow.test_end_to_end_flow ________________
+tests\integration\test_full_register_verify_flow.py:132: in test_end_to_end_flow
+    verify_tamp_resp = client.post(
+..\..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\werkzeug\test.py:1167: in post
+    return self.open(*args, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\testing.py:235: in open
+    response = super().open(
+..\..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\werkzeug\test.py:1116: in open
+    response_parts = self.run_wsgi_app(request.environ, buffered=buffered)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\werkzeug\test.py:988: in run_wsgi_app
+    rv = run_wsgi_app(self.application, environ, buffered=buffered)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\werkzeug\test.py:1264: in run_wsgi_app
+    app_rv = app(environ, start_response)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py:1536: in __call__
+    return self.wsgi_app(environ, start_response)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py:1514: in wsgi_app
+    response = self.handle_exception(e)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py:1511: in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py:919: in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py:917: in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py:902: in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+provena_flask\auth.py:278: in wrapped
+    response = fn(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^
+provena_flask\blueprints\api.py:276: in verify_image
+    img = _open_image_safely(image_bytes)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+provena_flask\blueprints\api.py:707: in _open_image_safely
+    return img.convert("RGB")
+           ^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\PIL\Image.py:984: in convert
+    self.load()
+..\..\..\AppData\Local\Programs\Python\Python311\Lib\site-packages\PIL\ImageFile.py:319: in load
+    raise _get_oserror(err_code, encoder=False)
+E   OSError: broken data stream when reading image file
+=========================== short test summary info ===========================
+FAILED tests/integration/test_full_register_verify_flow.py::TestFullVerificationFlow::test_end_to_end_flow
+============================= 1 failed in 11.23s ==============================

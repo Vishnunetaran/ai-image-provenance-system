@@ -1,0 +1,8 @@
+# Provena — Dev / Test Dependencies (install with: pip install -r requirements-dev.txt)
+-r requirements.txt
+
+pytest>=7.4.3
+pytest-flask>=1.3.0
+pytest-cov>=4.1.0
+ruff>=0.3.0
+mypy>=1.8.0

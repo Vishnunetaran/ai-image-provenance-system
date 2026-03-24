@@ -25,6 +25,11 @@ def create_app(config_name='development'):
     from provena_flask.config import config
     app.config.from_object(config[config_name])
     
+    # Initialize database and run migrations
+    from provena_flask.models import db as db_module
+    with app.app_context():
+        db_module.run_migrations()
+
     # Initialize logging
     setup_logging(app)
     

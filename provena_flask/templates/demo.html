@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -128,6 +129,46 @@
             cursor: not-allowed;
         }
 
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        .watermarked-preview-panel {
+            display: none;
+            background: #f0fff4;
+            border: 2px solid #28a745;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 18px;
+            text-align: center;
+        }
+
+        .watermarked-preview-panel h4 {
+            color: #155724;
+            margin-bottom: 12px;
+            font-size: 1em;
+        }
+
+        .watermarked-preview-panel p.hint {
+            font-size: 0.85em;
+            color: #555;
+            margin-top: 10px;
+        }
+
+        .watermarked-thumb {
+            max-width: 100%;
+            max-height: 280px;
+            border-radius: 8px;
+            border: 1px solid #c3e6cb;
+            margin-bottom: 12px;
+        }
+
         .results-section {
             display: none;
             margin-top: 30px;
@@ -232,8 +273,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .alert {
@@ -271,6 +317,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="header">
@@ -306,14 +353,25 @@
             <!-- Results Section -->
             <div class="results-section" id="resultsSection">
                 <div id="alertContainer"></div>
-                
+
                 <div class="result-card" id="resultCard" style="display: none;">
                     <h3 id="resultTitle">Results</h3>
                     <div id="resultContent"></div>
-                    
+
+                    <div class="watermarked-preview-panel" id="watermarkedPanel">
+                        <h4>🖼️ Watermarked Image (with embedded provenance)</h4>
+                        <img id="watermarkedThumb" class="watermarked-thumb" alt="Watermarked Image Preview" />
+                        <br>
+                        <button class="btn btn-success" id="downloadWatermarkedBtn">⬇️ Download Watermarked
+                            Image</button>
+                        <p class="hint">💡 Download this image, then upload it again and click <strong>Verify</strong>
+                            to confirm it is registered.</p>
+                    </div>
+
                     <div class="json-toggle">
                         <button class="btn btn-secondary" id="jsonToggle">View JSON</button>
-                        <button class="btn btn-primary" id="reportBtn" style="display: none;">📊 View Forensic Report</button>
+                        <button class="btn btn-primary" id="reportBtn" style="display: none;">📊 View Forensic
+                            Report</button>
                     </div>
                     <div class="json-content" id="jsonContent"></div>
                 </div>
@@ -330,6 +388,7 @@
         let currentImageData = null;
         let currentImageId = null;
         let currentResponse = null;
+        let currentWatermarkedB64 = null;
 
         // Upload section elements
         const uploadSection = document.getElementById('uploadSection');
@@ -399,11 +458,13 @@
             currentImageData = null;
             currentImageId = null;
             currentResponse = null;
+            currentWatermarkedB64 = null;
             fileInput.value = '';
             uploadSection.style.display = 'block';
             previewSection.style.display = 'none';
             resultsSection.style.display = 'none';
             reportSection.style.display = 'none';
+            document.getElementById('watermarkedPanel').style.display = 'none';
         });
 
         // Register button
@@ -431,6 +492,7 @@
 
                 if (response.ok) {
                     currentImageId = data.image_id;
+                    currentWatermarkedB64 = data.watermarked_image || null;
                     showSuccess('Image registered successfully!');
                     displayRegistrationResults(data);
                 } else {
@@ -441,6 +503,21 @@
             } finally {
                 showLoading(false);
             }
+        });
+
+        // Download watermarked image button
+        document.getElementById('downloadWatermarkedBtn').addEventListener('click', () => {
+            if (!currentWatermarkedB64) {
+                alert('No watermarked image available.');
+                return;
+            }
+            const link = document.createElement('a');
+            link.href = 'data:image/png;base64,' + currentWatermarkedB64;
+            const safeId = (currentImageId || 'watermarked').replace(/[^a-z0-9\-]/gi, '_');
+            link.download = safeId + '_watermarked.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         });
 
         // Verify button
@@ -521,6 +598,8 @@
             loading.style.display = show ? 'block' : 'none';
             registerBtn.disabled = show;
             verifyBtn.disabled = show;
+            const dlBtn = document.getElementById('downloadWatermarkedBtn');
+            if (dlBtn) dlBtn.disabled = show;
         }
 
         function clearResults() {
@@ -529,6 +608,8 @@
             reportSection.style.display = 'none';
             jsonContent.style.display = 'none';
             jsonToggle.textContent = 'View JSON';
+            const panel = document.getElementById('watermarkedPanel');
+            if (panel) panel.style.display = 'none';
         }
 
         function showSuccess(message) {
@@ -544,7 +625,7 @@
         function displayRegistrationResults(data) {
             resultCard.style.display = 'block';
             document.getElementById('resultTitle').textContent = 'Registration Results';
-            
+
             const html = `
                 <div class="info-grid">
                     <div class="info-item">
@@ -565,25 +646,40 @@
                     </div>
                 </div>
             `;
-            
+
             document.getElementById('resultContent').innerHTML = html;
             reportBtn.style.display = 'inline-block';
+
+            // Show watermarked image download panel
+            if (currentWatermarkedB64) {
+                const panel = document.getElementById('watermarkedPanel');
+                const thumb = document.getElementById('watermarkedThumb');
+                thumb.src = 'data:image/png;base64,' + currentWatermarkedB64;
+                panel.style.display = 'block';
+            }
         }
 
         function displayVerificationResults(data) {
             resultCard.style.display = 'block';
             document.getElementById('resultTitle').textContent = 'Verification Results';
-            
+
+            const statusKey = data.status.toLowerCase();
             const statusClass = {
                 'verified': 'status-verified',
-                'verified_modified': 'status-verified',
+                'verified_modified': 'status-suspicious',
                 'tampered': 'status-tampered',
                 'suspicious': 'status-suspicious',
+                'unregistered': 'status-not-found',
                 'not_found': 'status-not-found'
-            }[data.status] || 'status-not-found';
+            }[statusKey] || 'status-not-found';
+
+            let statusText = data.status.toUpperCase().replace('_', ' ');
+            if (data.status === 'verified_modified') {
+                statusText = 'PARTIAL: WATERMARK MISSING';
+            }
 
             let html = `
-                <div class="status-badge ${statusClass}">${data.status.toUpperCase().replace('_', ' ')}</div>
+                <div class="status-badge ${statusClass}">${statusText}</div>
             `;
 
             if (data.verification) {
@@ -626,11 +722,12 @@
             }
 
             document.getElementById('resultContent').innerHTML = html;
-            
+
             if (data.image_id) {
                 reportBtn.style.display = 'inline-block';
             }
         }
     </script>
 </body>
+
 </html>

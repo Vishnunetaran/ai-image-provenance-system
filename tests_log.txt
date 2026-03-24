@@ -1,0 +1,18 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.11.9, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\vishn\AppData\Local\Programs\Python\Python311\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\vishn\Downloads\cloned_Ai\ai-image-provenance-system
+plugins: anyio-4.8.0
+collecting ... collected 1 item
+
+tests/test_correctness.py::TestRegistration::test_register_returns_201 FAILED [100%]
+
+================================== FAILURES ===================================
+_________________ TestRegistration.test_register_returns_201 __________________
+tests\test_correctness.py:71: in test_register_returns_201
+    assert resp.status_code == 201
+E   assert 401 == 201
+E    +  where 401 = <Response [401]>.status_code
+=========================== short test summary info ===========================
+FAILED tests/test_correctness.py::TestRegistration::test_register_returns_201
+============================== 1 failed in 3.73s ==============================

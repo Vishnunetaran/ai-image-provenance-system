@@ -1,0 +1,173 @@
+{
+  "timestamp": "20260321_085255",
+  "robustness": {
+    "clean": {
+      "attack_name": "clean",
+      "total": 5,
+      "verified": 0,
+      "verified_modified": 5,
+      "unregistered": 0,
+      "tampered": 0,
+      "errors": 0,
+      "latencies_ms": [
+        2286.221399990609,
+        2279.5547999849077,
+        2275.097400008235,
+        2286.166100006085,
+        2300.438500009477
+      ]
+    },
+    "jpeg_q70": {
+      "attack_name": "jpeg_q70",
+      "total": 5,
+      "verified": 0,
+      "verified_modified": 5,
+      "unregistered": 0,
+      "tampered": 0,
+      "errors": 0,
+      "latencies_ms": [
+        2273.1337000150234,
+        2265.3869000205304,
+        2282.609300018521,
+        2273.3022999891546,
+        2283.6022000119556
+      ]
+    },
+    "jpeg_q50": {
+      "attack_name": "jpeg_q50",
+      "total": 5,
+      "verified": 0,
+      "verified_modified": 5,
+      "unregistered": 0,
+      "tampered": 0,
+      "errors": 0,
+      "latencies_ms": [
+        2245.664600020973,
+        2247.828200022923,
+        2265.0372999778483,
+        2261.3347999867983,
+        2274.405600008322
+      ]
+    },
+    "jpeg_q30": {
+      "attack_name": "jpeg_q30",
+      "total": 5,
+      "verified": 0,
+      "verified_modified": 5,
+      "unregistered": 0,
+      "tampered": 0,
+      "errors": 0,
+      "latencies_ms": [
+        2265.0615999882575,
+        2267.5058000022545,
+        2267.912500014063,
+        2264.585700002499,
+        2283.866499987198
+      ]
+    },
+    "crop_10pct": {
+      "attack_name": "crop_10pct",
+      "total": 5,
+      "verified": 0,
+      "verified_modified": 0,
+      "unregistered": 5,
+      "tampered": 0,
+      "errors": 0,
+      "latencies_ms": [
+        2217.0920000062324,
+        2234.5688000204973,
+        2231.589500006521,
+        2221.778600011021,
+        2225.186499999836
+      ]
+    },
+    "resize_512": {
+      "attack_name": "resize_512",
+      "total": 5,
+      "verified": 0,
+      "verified_modified": 5,
+      "unregistered": 0,
+      "tampered": 0,
+      "errors": 0,
+      "latencies_ms": [
+        2274.82299998519,
+        2258.4903999813832,
+        2300.9065999940503,
+        2228.465199994389,
+        2290.308700001333
+      ]
+    },
+    "gaussian_blur": {
+      "attack_name": "gaussian_blur",
+      "total": 5,
+      "verified": 0,
+      "verified_modified": 5,
+      "unregistered": 0,
+      "tampered": 0,
+      "errors": 0,
+      "latencies_ms": [
+        2285.8774999913294,
+        2270.857600000454,
+        2263.965599995572,
+        2257.5117999804206,
+        2258.1541999825276
+      ]
+    },
+    "brightness": {
+      "attack_name": "brightness",
+      "total": 5,
+      "verified": 0,
+      "verified_modified": 5,
+      "unregistered": 0,
+      "tampered": 0,
+      "errors": 0,
+      "latencies_ms": [
+        2243.349299998954,
+        2257.8098000085447,
+        2310.3973000252154,
+        2254.6211000008043,
+        2245.2235000091605
+      ]
+    },
+    "social_media_sim": {
+      "attack_name": "social_media_sim",
+      "total": 5,
+      "verified": 0,
+      "verified_modified": 5,
+      "unregistered": 0,
+      "tampered": 0,
+      "errors": 0,
+      "latencies_ms": [
+        2927.6420999958646,
+        2861.199000006309,
+        2932.8493000066373,
+        2865.4933999932837,
+        2868.446100008441
+      ]
+    },
+    "screenshot_sim": {
+      "attack_name": "screenshot_sim",
+      "total": 5,
+      "verified": 0,
+      "verified_modified": 5,
+      "unregistered": 0,
+      "tampered": 0,
+      "errors": 0,
+      "latencies_ms": [
+        2277.960199979134,
+        2302.5485000107437,
+        2282.233300007647,
+        2279.769800021313,
+        2283.846200007247
+      ]
+    }
+  },
+  "correctness": {
+    "total": 10,
+    "false_positives": 0
+  },
+  "latency": {
+    "register_p99_ms": 2556.1815719900187,
+    "verify_p99_ms": 2267.392811984755
+  }
+}

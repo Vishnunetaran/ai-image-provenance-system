@@ -33,7 +33,7 @@ class Config:
     LOG_LEVEL = 'INFO'
     
     # API settings
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
+    MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB max request size (Base64 can be large)
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
     
     # Rate limiting (requests per minute)

@@ -1,0 +1,26 @@
+﻿================================================================
+PROVENA v2 BENCHMARK SUITE
+API: http://localhost:5000
+================================================================
+  API connectivity: OK
+
+  WARNING: No test images provided. Using synthetic images for smoke test only.
+  Results will NOT be representative. Provide real AI-generated images via --images.
+
+[1/3] Robustness benchmark
+  3 images ╫ 10 attacks = 30 verify calls
+
+
+  SKIP image 0: register failed ù 500 Server Error: INTERNAL SERVER ERROR for url: http://localhost:5000/api/v1/register
+
+  SKIP image 1: register failed ù 500 Server Error: INTERNAL SERVER ERROR for url: http://localhost:5000/api/v1/register
+
+  SKIP image 2: register failed ù 500 Server Error: INTERNAL SERVER ERROR for url: http://localhost:5000/api/v1/register
+
+[2/3] False positive benchmark
+  3 unregistered synthetic images
+
+
+[3/3] Latency benchmark
+  3 register calls + 3 verify calls
+

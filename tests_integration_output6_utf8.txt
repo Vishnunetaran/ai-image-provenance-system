@@ -1,0 +1,20 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.11.9, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\vishn\AppData\Local\Programs\Python\Python311\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\vishn\Downloads\cloned_Ai\ai-image-provenance-system
+plugins: anyio-4.8.0
+collecting ... collected 1 item
+
+tests/integration/test_full_register_verify_flow.py::TestFullVerificationFlow::test_end_to_end_flow FAILED [100%]
+
+================================== FAILURES ===================================
+________________ TestFullVerificationFlow.test_end_to_end_flow ________________
+tests\integration\test_full_register_verify_flow.py:131: in test_end_to_end_flow
+    assert verify_rnd_resp.json["status"] == "UNREGISTERED"
+E   AssertionError: assert 'VERIFIED_MODIFIED' == 'UNREGISTERED'
+E     
+E     - UNREGISTERED
+E     + VERIFIED_MODIFIED
+=========================== short test summary info ===========================
+FAILED tests/integration/test_full_register_verify_flow.py::TestFullVerificationFlow::test_end_to_end_flow
+============================= 1 failed in 10.84s ==============================

@@ -1,0 +1,113 @@
+{
+  "timestamp": "20260321_091126",
+  "robustness": {
+    "clean": {
+      "attack_name": "clean",
+      "total": 3,
+      "verified": 0,
+      "verified_modified": 0,
+      "unregistered": 0,
+      "tampered": 0,
+      "errors": 3,
+      "latencies_ms": []
+    },
+    "jpeg_q70": {
+      "attack_name": "jpeg_q70",
+      "total": 3,
+      "verified": 0,
+      "verified_modified": 0,
+      "unregistered": 0,
+      "tampered": 0,
+      "errors": 3,
+      "latencies_ms": []
+    },
+    "jpeg_q50": {
+      "attack_name": "jpeg_q50",
+      "total": 3,
+      "verified": 0,
+      "verified_modified": 0,
+      "unregistered": 0,
+      "tampered": 0,
+      "errors": 3,
+      "latencies_ms": []
+    },
+    "jpeg_q30": {
+      "attack_name": "jpeg_q30",
+      "total": 3,
+      "verified": 0,
+      "verified_modified": 0,
+      "unregistered": 0,
+      "tampered": 0,
+      "errors": 3,
+      "latencies_ms": []
+    },
+    "crop_10pct": {
+      "attack_name": "crop_10pct",
+      "total": 3,
+      "verified": 0,
+      "verified_modified": 0,
+      "unregistered": 0,
+      "tampered": 0,
+      "errors": 3,
+      "latencies_ms": []
+    },
+    "resize_512": {
+      "attack_name": "resize_512",
+      "total": 3,
+      "verified": 0,
+      "verified_modified": 0,
+      "unregistered": 0,
+      "tampered": 0,
+      "errors": 3,
+      "latencies_ms": []
+    },
+    "gaussian_blur": {
+      "attack_name": "gaussian_blur",
+      "total": 3,
+      "verified": 0,
+      "verified_modified": 0,
+      "unregistered": 0,
+      "tampered": 0,
+      "errors": 3,
+      "latencies_ms": []
+    },
+    "brightness": {
+      "attack_name": "brightness",
+      "total": 3,
+      "verified": 0,
+      "verified_modified": 0,
+      "unregistered": 0,
+      "tampered": 0,
+      "errors": 3,
+      "latencies_ms": []
+    },
+    "social_media_sim": {
+      "attack_name": "social_media_sim",
+      "total": 3,
+      "verified": 0,
+      "verified_modified": 0,
+      "unregistered": 0,
+      "tampered": 0,
+      "errors": 3,
+      "latencies_ms": []
+    },
+    "screenshot_sim": {
+      "attack_name": "screenshot_sim",
+      "total": 3,
+      "verified": 0,
+      "verified_modified": 0,
+      "unregistered": 0,
+      "tampered": 0,
+      "errors": 3,
+      "latencies_ms": []
+    }
+  },
+  "correctness": {
+    "total": 3,
+    "false_positives": 0
+  },
+  "latency": {
+    "register_p99_ms": 9999,
+    "verify_p99_ms": 2302.636204014998
+  }
+}

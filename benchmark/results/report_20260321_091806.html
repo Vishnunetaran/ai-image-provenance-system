@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Provena v2 Benchmark Report</title>
+<style>
+  body { font-family: -apple-system, sans-serif; margin: 0; padding: 32px; background: #fafaf8; color: #1a1a18; }
+  h1 { font-size: 22px; font-weight: 500; margin-bottom: 4px }
+  table { width: 100%; border-collapse: collapse; background: white; border: 0.5px solid #e0ddd4 }
+  th { text-align: left; padding: 10px 12px; font-size: 12px; color: #888; background: #fafaf8 }
+  pre { background: #1e1e1e; color: #d4d4d4; padding: 20px; border-radius: 10px; font-size: 12px }
+</style>
+</head>
+<body>
+<h1>Provena v2 — Benchmark Report</h1>
+<div class="overall">ONE OR MORE CHECKS FAILED</div>
+<table>
+  <thead><tr><th>Attack</th><th>Detected</th><th>Rate vs threshold</th><th>Verify P99</th><th>Result</th></tr></thead>
+  <tbody>
+        <tr>
+          <td style="padding:8px 12px;font-size:13px">clean</td>
+          <td style="padding:8px 12px;font-size:13px">3/3</td>
+          <td style="padding:8px 12px;min-width:180px">
+            <div style="background:#f0ede6;border-radius:4px;height:14px;position:relative">
+              <div style="background:#1D9E75;width:100%;height:100%;border-radius:4px"></div>
+              <div style="position:absolute;top:0;left:95%;width:2px;height:100%;background:#444;opacity:0.4"></div>
+            </div>
+            <span style="font-size:11px;color:#666">100.0% (need 95%)</span>
+          </td>
+          <td style="padding:8px 12px;font-size:13px">2353ms</td>
+          <td style="padding:8px 12px">
+            <span style="background:#e1f5ee;color:#1D9E75;
+                         padding:2px 10px;border-radius:12px;font-size:12px;font-weight:500">
+              PASS
+            </span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 12px;font-size:13px">jpeg_q70</td>
+          <td style="padding:8px 12px;font-size:13px">3/3</td>
+          <td style="padding:8px 12px;min-width:180px">
+            <div style="background:#f0ede6;border-radius:4px;height:14px;position:relative">
+              <div style="background:#1D9E75;width:100%;height:100%;border-radius:4px"></div>
+              <div style="position:absolute;top:0;left:95%;width:2px;height:100%;background:#444;opacity:0.4"></div>
+            </div>
+            <span style="font-size:11px;color:#666">100.0% (need 95%)</span>
+          </td>
+          <td style="padding:8px 12px;font-size:13px">2309ms</td>
+          <td style="padding:8px 12px">
+            <span style="background:#e1f5ee;color:#1D9E75;
+                         padding:2px 10px;border-radius:12px;font-size:12px;font-weight:500">
+              PASS
+            </span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 12px;font-size:13px">jpeg_q50</td>
+          <td style="padding:8px 12px;font-size:13px">3/3</td>
+          <td style="padding:8px 12px;min-width:180px">
+            <div style="background:#f0ede6;border-radius:4px;height:14px;position:relative">
+              <div style="background:#1D9E75;width:100%;height:100%;border-radius:4px"></div>
+              <div style="position:absolute;top:0;left:90%;width:2px;height:100%;background:#444;opacity:0.4"></div>
+            </div>
+            <span style="font-size:11px;color:#666">100.0% (need 90%)</span>
+          </td>
+          <td style="padding:8px 12px;font-size:13px">2331ms</td>
+          <td style="padding:8px 12px">
+            <span style="background:#e1f5ee;color:#1D9E75;
+                         padding:2px 10px;border-radius:12px;font-size:12px;font-weight:500">
+              PASS
+            </span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 12px;font-size:13px">jpeg_q30</td>
+          <td style="padding:8px 12px;font-size:13px">3/3</td>
+          <td style="padding:8px 12px;min-width:180px">
+            <div style="background:#f0ede6;border-radius:4px;height:14px;position:relative">
+              <div style="background:#1D9E75;width:100%;height:100%;border-radius:4px"></div>
+              <div style="position:absolute;top:0;left:75%;width:2px;height:100%;background:#444;opacity:0.4"></div>
+            </div>
+            <span style="font-size:11px;color:#666">100.0% (need 75%)</span>
+          </td>
+          <td style="padding:8px 12px;font-size:13px">2292ms</td>
+          <td style="padding:8px 12px">
+            <span style="background:#e1f5ee;color:#1D9E75;
+                         padding:2px 10px;border-radius:12px;font-size:12px;font-weight:500">
+              PASS
+            </span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 12px;font-size:13px">crop_10pct</td>
+          <td style="padding:8px 12px;font-size:13px">0/3</td>
+          <td style="padding:8px 12px;min-width:180px">
+            <div style="background:#f0ede6;border-radius:4px;height:14px;position:relative">
+              <div style="background:#E24B4A;width:0%;height:100%;border-radius:4px"></div>
+              <div style="position:absolute;top:0;left:88%;width:2px;height:100%;background:#444;opacity:0.4"></div>
+            </div>
+            <span style="font-size:11px;color:#666">0.0% (need 88%)</span>
+          </td>
+          <td style="padding:8px 12px;font-size:13px">2246ms</td>
+          <td style="padding:8px 12px">
+            <span style="background:#fcebeb;color:#E24B4A;
+                         padding:2px 10px;border-radius:12px;font-size:12px;font-weight:500">
+              FAIL
+            </span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 12px;font-size:13px">resize_512</td>
+          <td style="padding:8px 12px;font-size:13px">3/3</td>
+          <td style="padding:8px 12px;min-width:180px">
+            <div style="background:#f0ede6;border-radius:4px;height:14px;position:relative">
+              <div style="background:#1D9E75;width:100%;height:100%;border-radius:4px"></div>
+              <div style="position:absolute;top:0;left:85%;width:2px;height:100%;background:#444;opacity:0.4"></div>
+            </div>
+            <span style="font-size:11px;color:#666">100.0% (need 85%)</span>
+          </td>
+          <td style="padding:8px 12px;font-size:13px">2315ms</td>
+          <td style="padding:8px 12px">
+            <span style="background:#e1f5ee;color:#1D9E75;
+                         padding:2px 10px;border-radius:12px;font-size:12px;font-weight:500">
+              PASS
+            </span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 12px;font-size:13px">gaussian_blur</td>
+          <td style="padding:8px 12px;font-size:13px">3/3</td>
+          <td style="padding:8px 12px;min-width:180px">
+            <div style="background:#f0ede6;border-radius:4px;height:14px;position:relative">
+              <div style="background:#1D9E75;width:100%;height:100%;border-radius:4px"></div>
+              <div style="position:absolute;top:0;left:85%;width:2px;height:100%;background:#444;opacity:0.4"></div>
+            </div>
+            <span style="font-size:11px;color:#666">100.0% (need 85%)</span>
+          </td>
+          <td style="padding:8px 12px;font-size:13px">2337ms</td>
+          <td style="padding:8px 12px">
+            <span style="background:#e1f5ee;color:#1D9E75;
+                         padding:2px 10px;border-radius:12px;font-size:12px;font-weight:500">
+              PASS
+            </span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 12px;font-size:13px">brightness</td>
+          <td style="padding:8px 12px;font-size:13px">3/3</td>
+          <td style="padding:8px 12px;min-width:180px">
+            <div style="background:#f0ede6;border-radius:4px;height:14px;position:relative">
+              <div style="background:#1D9E75;width:100%;height:100%;border-radius:4px"></div>
+              <div style="position:absolute;top:0;left:85%;width:2px;height:100%;background:#444;opacity:0.4"></div>
+            </div>
+            <span style="font-size:11px;color:#666">100.0% (need 85%)</span>
+          </td>
+          <td style="padding:8px 12px;font-size:13px">2421ms</td>
+          <td style="padding:8px 12px">
+            <span style="background:#e1f5ee;color:#1D9E75;
+                         padding:2px 10px;border-radius:12px;font-size:12px;font-weight:500">
+              PASS
+            </span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 12px;font-size:13px">social_media_sim</td>
+          <td style="padding:8px 12px;font-size:13px">3/3</td>
+          <td style="padding:8px 12px;min-width:180px">
+            <div style="background:#f0ede6;border-radius:4px;height:14px;position:relative">
+              <div style="background:#1D9E75;width:100%;height:100%;border-radius:4px"></div>
+              <div style="position:absolute;top:0;left:70%;width:2px;height:100%;background:#444;opacity:0.4"></div>
+            </div>
+            <span style="font-size:11px;color:#666">100.0% (need 70%)</span>
+          </td>
+          <td style="padding:8px 12px;font-size:13px">3323ms</td>
+          <td style="padding:8px 12px">
+            <span style="background:#e1f5ee;color:#1D9E75;
+                         padding:2px 10px;border-radius:12px;font-size:12px;font-weight:500">
+              PASS
+            </span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 12px;font-size:13px">screenshot_sim</td>
+          <td style="padding:8px 12px;font-size:13px">3/3</td>
+          <td style="padding:8px 12px;min-width:180px">
+            <div style="background:#f0ede6;border-radius:4px;height:14px;position:relative">
+              <div style="background:#1D9E75;width:100%;height:100%;border-radius:4px"></div>
+              <div style="position:absolute;top:0;left:70%;width:2px;height:100%;background:#444;opacity:0.4"></div>
+            </div>
+            <span style="font-size:11px;color:#666">100.0% (need 70%)</span>
+          </td>
+          <td style="padding:8px 12px;font-size:13px">2371ms</td>
+          <td style="padding:8px 12px">
+            <span style="background:#e1f5ee;color:#1D9E75;
+                         padding:2px 10px;border-radius:12px;font-size:12px;font-weight:500">
+              PASS
+            </span>
+          </td>
+        </tr></tbody>
+</table>
+<h2>Full text report</h2>
+<pre>================================================================
+PROVENA v2 — BENCHMARK REPORT
+Generated: 2026-03-21T09:19:54.327127
+================================================================
+
+── ROBUSTNESS ─────────────────────────────────────────────
+Attack                 Detected    Rate  Threshold   P99ms  Result
+----------------------------------------------------------------
+clean                     3/3    100.0%        95%   2353    PASS
+jpeg_q70                  3/3    100.0%        95%   2309    PASS
+jpeg_q50                  3/3    100.0%        90%   2331    PASS
+jpeg_q30                  3/3    100.0%        75%   2292    PASS
+crop_10pct                0/3      0.0%        88%   2246    FAIL
+resize_512                3/3    100.0%        85%   2315    PASS
+gaussian_blur             3/3    100.0%        85%   2337    PASS
+brightness                3/3    100.0%        85%   2421    PASS
+social_media_sim          3/3    100.0%        70%   3323    PASS
+screenshot_sim            3/3    100.0%        70%   2371    PASS
+
+── CORRECTNESS (false positives) ───────────────────────────
+  Unregistered images tested : 3
+  False positives            : 0
+  False positive rate        : 0.000%
+  Threshold                  : <0.100%
+  Result                     : PASS
+
+── LATENCY ─────────────────────────────────────────────────
+  Register P99               : 2645ms  (threshold: <2000ms)  FAIL
+  Verify   P99               : 2331ms  (threshold:  <500ms)  FAIL
+
+================================================================
+OVERALL: ONE OR MORE CHECKS FAILED
+================================================================</pre>
+</body>
+</html>

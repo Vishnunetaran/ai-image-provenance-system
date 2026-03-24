@@ -1,0 +1,33 @@
+================================================================
+PROVENA v2 — BENCHMARK REPORT
+Generated: 2026-03-21T09:19:54.327127
+================================================================
+
+── ROBUSTNESS ─────────────────────────────────────────────
+Attack                 Detected    Rate  Threshold   P99ms  Result
+----------------------------------------------------------------
+clean                     3/3    100.0%        95%   2353    PASS
+jpeg_q70                  3/3    100.0%        95%   2309    PASS
+jpeg_q50                  3/3    100.0%        90%   2331    PASS
+jpeg_q30                  3/3    100.0%        75%   2292    PASS
+crop_10pct                0/3      0.0%        88%   2246    FAIL
+resize_512                3/3    100.0%        85%   2315    PASS
+gaussian_blur             3/3    100.0%        85%   2337    PASS
+brightness                3/3    100.0%        85%   2421    PASS
+social_media_sim          3/3    100.0%        70%   3323    PASS
+screenshot_sim            3/3    100.0%        70%   2371    PASS
+
+── CORRECTNESS (false positives) ───────────────────────────
+  Unregistered images tested : 3
+  False positives            : 0
+  False positive rate        : 0.000%
+  Threshold                  : <0.100%
+  Result                     : PASS
+
+── LATENCY ─────────────────────────────────────────────────
+  Register P99               : 2645ms  (threshold: <2000ms)  FAIL
+  Verify   P99               : 2331ms  (threshold:  <500ms)  FAIL
+
+================================================================
+OVERALL: ONE OR MORE CHECKS FAILED
+================================================================

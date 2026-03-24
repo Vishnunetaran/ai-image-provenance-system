@@ -1,0 +1,153 @@
+{
+  "timestamp": "20260321_091503",
+  "robustness": {
+    "clean": {
+      "attack_name": "clean",
+      "total": 3,
+      "verified": 0,
+      "verified_modified": 3,
+      "unregistered": 0,
+      "tampered": 0,
+      "errors": 0,
+      "latencies_ms": [
+        2274.1917000093963,
+        2261.8115000077523,
+        2294.9093999923207
+      ]
+    },
+    "jpeg_q70": {
+      "attack_name": "jpeg_q70",
+      "total": 3,
+      "verified": 0,
+      "verified_modified": 3,
+      "unregistered": 0,
+      "tampered": 0,
+      "errors": 0,
+      "latencies_ms": [
+        2255.3321000013966,
+        2260.813300003065,
+        2235.034999990603
+      ]
+    },
+    "jpeg_q50": {
+      "attack_name": "jpeg_q50",
+      "total": 3,
+      "verified": 0,
+      "verified_modified": 3,
+      "unregistered": 0,
+      "tampered": 0,
+      "errors": 0,
+      "latencies_ms": [
+        2253.038700000616,
+        2290.785799996229,
+        2280.3409999760333
+      ]
+    },
+    "jpeg_q30": {
+      "attack_name": "jpeg_q30",
+      "total": 3,
+      "verified": 0,
+      "verified_modified": 3,
+      "unregistered": 0,
+      "tampered": 0,
+      "errors": 0,
+      "latencies_ms": [
+        2325.7100000046194,
+        2268.6519999988377,
+        2309.6278000157326
+      ]
+    },
+    "crop_10pct": {
+      "attack_name": "crop_10pct",
+      "total": 3,
+      "verified": 0,
+      "verified_modified": 0,
+      "unregistered": 3,
+      "tampered": 0,
+      "errors": 0,
+      "latencies_ms": [
+        2213.9225999999326,
+        2286.796400003368,
+        2239.2251000273973
+      ]
+    },
+    "resize_512": {
+      "attack_name": "resize_512",
+      "total": 3,
+      "verified": 0,
+      "verified_modified": 3,
+      "unregistered": 0,
+      "tampered": 0,
+      "errors": 0,
+      "latencies_ms": [
+        2249.7042999893893,
+        2239.3073000130244,
+        2261.6686999972444
+      ]
+    },
+    "gaussian_blur": {
+      "attack_name": "gaussian_blur",
+      "total": 3,
+      "verified": 0,
+      "verified_modified": 3,
+      "unregistered": 0,
+      "tampered": 0,
+      "errors": 0,
+      "latencies_ms": [
+        2284.2849000007845,
+        2299.3018999986816,
+        2272.0066999900155
+      ]
+    },
+    "brightness": {
+      "attack_name": "brightness",
+      "total": 3,
+      "verified": 0,
+      "verified_modified": 3,
+      "unregistered": 0,
+      "tampered": 0,
+      "errors": 0,
+      "latencies_ms": [
+        2281.85780000058,
+        2269.2087000177708,
+        2297.948000021279
+      ]
+    },
+    "social_media_sim": {
+      "attack_name": "social_media_sim",
+      "total": 3,
+      "verified": 0,
+      "verified_modified": 3,
+      "unregistered": 0,
+      "tampered": 0,
+      "errors": 0,
+      "latencies_ms": [
+        2900.4461000149604,
+        2897.335199988447,
+        2983.5506999806967
+      ]
+    },
+    "screenshot_sim": {
+      "attack_name": "screenshot_sim",
+      "total": 3,
+      "verified": 0,
+      "verified_modified": 3,
+      "unregistered": 0,
+      "tampered": 0,
+      "errors": 0,
+      "latencies_ms": [
+        2269.9262000096496,
+        2273.1105999846477,
+        2292.949199996656
+      ]
+    }
+  },
+  "correctness": {
+    "total": 3,
+    "false_positives": 0
+  },
+  "latency": {
+    "register_p99_ms": 2546.9501620013034,
+    "verify_p99_ms": 2294.0277699934086
+  }
+}
