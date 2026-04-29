@@ -245,16 +245,12 @@ def require_api_key(kind: str = "verify") -> Callable:
             plaintext = auth_header[len("Bearer "):]
             key_record = lookup_key(plaintext)
 
+            # AUTH BYPASS REMOVED - do not re-add
             if key_record is None:
-                # DEBUG BYPASS for benchmark
-                key_record = {
-                    "id": "guest",
-                    "org_name": "Guest",
-                    "tier": "enterprise",
-                    "daily_register_limit": 99999,
-                    "daily_verify_limit": 99999
-                }
-                logger.warning("Auth bypass: Using guest record")
+                return (
+                    jsonify({"error": {"code": "INVALID_API_KEY", "message": "Invalid or revoked API key"}}),
+                    401,
+                )
 
             # Rate limiting
             limit = key_record.get(f"daily_{kind}_limit", 100)

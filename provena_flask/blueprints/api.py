@@ -165,60 +165,18 @@ def register_image():
         print(f"║ pHash (Fingerprint): {phash_hex:<25} ║")
         print(f"╟────────────────────────────────────────────────────────╢")
 
-        # ── Path 2: Neural watermark (256-bit codeword w/ ECC) ───────────────────
-        model_id_idx = _model_id_to_index(model_id)
-        now_ts = int(timestamp.timestamp())
-        session_token = _make_session_token(g.api_key["id"])
-
-        # codeword is 32 bytes (256 bits)
-        neural_codeword = payload_codec.encode(
-            model_id_idx=model_id_idx,
-            timestamp=now_ts,
-            session_token=session_token,
-            phash_int=phash_int
-        )
-        # The DB record stores the ORIGINAL (clean) data section
-        clean_data_hex = (
-            struct.pack("B", model_id_idx)
-            + now_ts.to_bytes(5, "big")
-            + session_token
-            + (phash_int & 0xFFFF_FFFF_FFFF).to_bytes(6, "big")
-        ).hex()
-
-        print(f"║ Neural Path: Encoding RS-ECC (160b -> 256b)...         ║")
-        print(f"║   Payload (Hex): {clean_data_hex[:26]}... ║")
-
-        try:
-            watermarked_img, neural_confidence = neural_watermark_service.embed(img, neural_codeword)
-            print(f"║   Embedding: SUCCESS (Confidence: {neural_confidence:.3f})      ║")
-        except Exception as exc:
-            print(f"║   Embedding: WARNING ({str(exc)[:25]}...) ║")
-            logger.warning("Neural embedding error: %s", exc)
-            watermarked_img, neural_confidence = img.copy(), 0.0
-
-        # --- C2PA manifest generation ---
-        now_iso = timestamp.isoformat()
-        try:
-            print(f"╟────────────────────────────────────────────────────────╢")
-            manifest_id, signed_image_bytes = c2pa_service.create_manifest(
-                image_bytes=image_bytes,
-                model_id=model_id,
-                creator_did=creator_did or "did:provena:anonymous",
-                timestamp=timestamp,
-                custom_fields=custom_fields
-            )
-            print(f"║ C2PA Manifest ID: {manifest_id[:36]:<36} ║")
-            print(f"║   Injection: SUCCESS                                   ║")
-        except Exception as exc:
-            print(f"║   Injection: FAILED ({str(exc)[:25]}...)    ║")
-            logger.error("C2PA embedding failed: %s", exc)
-            manifest_id = str(uuid.uuid4())
-            buf = io.BytesIO()
-            watermarked_img.save(buf, format="PNG")
-            signed_image_bytes = buf.getvalue()
-
-        # --- Persist record ---
+        # --- Persist record (BEFORE watermarking, so we have record_id) ---
         record_id = str(uuid.uuid4())
+        now_iso = timestamp.isoformat()
+        manifest_id = str(uuid.uuid4())  # Pre-generate; updated if C2PA succeeds
+        # Convert UUID to 32-bit int for compact payload
+        record_id_int = int(record_id.replace('-', ''), 16) % (2**32)
+
+        # ── Encode 48-bit neural payload (4B record_id + 2B ECC) ─────────────
+        neural_payload = payload_codec.encode(record_id_int)
+        payload_hex = neural_payload.hex()
+        print(f"║ Neural Payload: {payload_hex} ({len(neural_payload)}B)          ║")
+
         try:
             print(f"╟────────────────────────────────────────────────────────╢")
             print(f"║ Database: Saving record {record_id[:8]}...             ║")
@@ -231,12 +189,11 @@ def register_image():
                     "model_id":       model_id,
                     "creator_did":    creator_did or "did:provena:anonymous",
                     "registered_at":  now_iso,
-                    "payload_hex":    clean_data_hex,
+                    "payload_hex":    payload_hex,
                     "api_key_id":     g.api_key["id"],
                     "custom_fields":  json.dumps(custom_fields),
                     "created_at":     now_iso,
                 })
-                # Align with schema: id, c2pa_json, signature, created_at
                 conn.execute(
                     "INSERT INTO manifests (id, c2pa_json, created_at) VALUES (?, ?, ?)",
                     (manifest_id, json.dumps({"model_id": model_id, "creator": creator_did}), now_iso)
@@ -247,6 +204,48 @@ def register_image():
             print(f"║   Status: SQL_ERROR ({str(exc)[:25]}...)    ║")
             logger.error("DB insert error: %s", exc)
             return internal_error("Failed to persist provenance record")
+
+        # ── Neural watermark embedding (48-bit payload) ──────────────────────
+        print(f"╟────────────────────────────────────────────────────────╢")
+        print(f"║ Neural Path: Embedding TrustMark (48-bit payload)...   ║")
+        try:
+            watermarked_img = neural_watermark_service.embed(img, neural_payload)
+            print(f"║   Embedding: SUCCESS                                   ║")
+        except Exception as exc:
+            print(f"║   Embedding: WARNING ({str(exc)[:25]}...) ║")
+            logger.warning("Neural embedding error: %s", exc)
+            watermarked_img = img.copy()
+
+        # --- C2PA manifest generation ---
+        try:
+            print(f"╟────────────────────────────────────────────────────────╢")
+            real_manifest_id, signed_image_bytes = c2pa_service.create_manifest(
+                image_bytes=image_bytes,
+                model_id=model_id,
+                creator_did=creator_did or "did:provena:anonymous",
+                timestamp=timestamp,
+                custom_fields=custom_fields
+            )
+            # Update manifest_id if C2PA generated a different one
+            if real_manifest_id != manifest_id:
+                with db_module.get_connection() as conn:
+                    conn.execute(
+                        "UPDATE provenance_records SET manifest_id = ? WHERE id = ?",
+                        (real_manifest_id, record_id)
+                    )
+                    conn.execute(
+                        "UPDATE manifests SET id = ? WHERE id = ?",
+                        (real_manifest_id, manifest_id)
+                    )
+                manifest_id = real_manifest_id
+            print(f"║ C2PA Manifest ID: {manifest_id[:36]:<36} ║")
+            print(f"║   Injection: SUCCESS                                   ║")
+        except Exception as exc:
+            print(f"║   Injection: FAILED ({str(exc)[:25]}...)    ║")
+            logger.error("C2PA embedding failed: %s", exc)
+            buf = io.BytesIO()
+            watermarked_img.save(buf, format="PNG")
+            signed_image_bytes = buf.getvalue()
 
         # Response
         wm_buf = io.BytesIO()
@@ -317,58 +316,59 @@ def verify_image():
         # ── Path 1: C2PA manifest ────────────────────────────────────────────────
         print(f"╟────────────────────────────────────────────────────────╢")
         print(f"║ Path 1: Checking Cryptographic Manifest (C2PA)...      ║")
-        manifest_result = c2pa_service.verify_manifest(image_bytes)
+        try:
+            manifest_result = c2pa_service.verify_manifest(image_bytes)
 
-        if manifest_result.error == "SIGNATURE_INVALID":
-            print(f"║   Result: TAMPERED (Signature Invalid)                 ║")
-            status     = "TAMPERED"
-            confidence = 0.99
-            c2pa_valid = False
-            return _build_verify_response(
-                status, confidence, record, watermark_extracted, c2pa_valid, hamming_dist, request_id
-            )
-
-        if manifest_result.valid:
-            print(f"║   Result: VALID ({manifest_result.manifest_id[:8]}...)          ║")
-            record = _get_record_by_manifest(manifest_result.manifest_id)
-            if record:
-                print(f"║   Match:  FOUND in Database                            ║")
-                status              = "VERIFIED"
-                confidence          = 0.99
-                watermark_extracted = True
-                c2pa_valid          = True
-                hamming_dist        = 0
-                _write_audit_log(record.get("id"), g.api_key["id"], status, confidence, None, request_id)
-                print(f"╚══════════════════════ VERIFIED ════════════════════════╝\n")
+            if manifest_result.error == "SIGNATURE_INVALID":
+                print(f"║   Result: TAMPERED (Signature Invalid)                 ║")
+                status     = "TAMPERED"
+                confidence = 0.99
+                c2pa_valid = False
                 return _build_verify_response(
-                    status, confidence, record, watermark_extracted, c2pa_valid, hamming_dist, request_id
+                    status, confidence, record, watermark_extracted, c2pa_valid, hamming_dist, request_id,
+                    match_type="c2pa"
                 )
-        else:
-            print(f"║   Result: NOT FOUND                                    ║")
 
-        # ── Path 2: Neural watermark extraction ──────────────────────────────────
+            if manifest_result.valid:
+                print(f"║   Result: VALID ({manifest_result.manifest_id[:8]}...)          ║")
+                record = _get_record_by_manifest(manifest_result.manifest_id)
+                if record:
+                    print(f"║   Match:  FOUND in Database                            ║")
+                    status              = "VERIFIED"
+                    confidence          = 0.99
+                    watermark_extracted = True
+                    c2pa_valid          = True
+                    hamming_dist        = 0
+                    _write_audit_log(record.get("id"), g.api_key["id"], status, confidence, None, request_id)
+                    print(f"╚══════════════════════ VERIFIED ════════════════════════╝\n")
+                    return _build_verify_response(
+                        status, confidence, record, watermark_extracted, c2pa_valid, hamming_dist, request_id,
+                        match_type="c2pa"
+                    )
+            else:
+                print(f"║   Result: NOT FOUND                                    ║")
+        except Exception as exc:
+            # C2PA check failed entirely — log and continue to neural path
+            print(f"║   Result: C2PA ERROR ({str(exc)[:25]}...)     ║")
+            logger.warning("C2PA check error: %s", exc)
+
+        # ── Path 2: Neural watermark extraction (TrustMark 48-bit) ────────────
         print(f"╟────────────────────────────────────────────────────────╢")
-        print(f"║ Path 2: Probing Neural Watermark (DWT-DCT)...          ║")
+        print(f"║ Path 2: Probing Neural Watermark (TrustMark)...        ║")
         try:
             payload_bytes, neural_confidence = neural_watermark_service.extract(img)
             print(f"║   Extraction: SUCCESS (Conf: {neural_confidence:.3f})              ║")
         except Exception as exc:
             print(f"║   Extraction: FAILED ({str(exc)[:20]}...)        ║")
             logger.warning("Neural extraction error: %s", exc)
-            payload_bytes, neural_confidence = b"\x00" * 32, 0.0
+            payload_bytes, neural_confidence = b"", 0.0
 
-        if neural_confidence >= NEURAL_CONFIDENCE_THRESHOLD:
+        if neural_confidence >= NEURAL_CONFIDENCE_THRESHOLD and len(payload_bytes) == 6:
             try:
-                decoded_obj = payload_codec.decode(payload_bytes)
-                print(f"║   Correction: RS-ECC SUCCESS                           ║")
-                
-                corrected_data = (
-                    struct.pack("B", decoded_obj.model_id_idx)
-                    + decoded_obj.timestamp.to_bytes(5, "big")
-                    + decoded_obj.session_token
-                    + decoded_obj.phash_prefix.to_bytes(6, "big")
-                )
-                record = _get_record_by_payload(corrected_data.hex())
+                record_id_int = payload_codec.decode(payload_bytes)
+                print(f"║   Correction: RS-ECC SUCCESS (ID: {record_id_int})         ║")
+
+                record = _get_record_by_payload(payload_bytes.hex())
 
                 if record:
                     print(f"║   Match:      FOUND in Database                        ║")
@@ -379,7 +379,8 @@ def verify_image():
                     _write_audit_log(record.get("id"), g.api_key["id"], status, confidence, 0, request_id)
                     print(f"╚══════════════════════ VERIFIED ════════════════════════╝\n")
                     return _build_verify_response(
-                        status, confidence, record, watermark_extracted, c2pa_valid, hamming_dist, request_id
+                        status, confidence, record, watermark_extracted, c2pa_valid, hamming_dist, request_id,
+                        match_type="neural"
                     )
                 else:
                     print(f"║   Match:      NOT FOUND (Stale record?)                ║")
@@ -389,6 +390,8 @@ def verify_image():
             except Exception as exc:
                 print(f"║   Error:      {str(exc)[:30]:<30} ║")
                 logger.warning("Neural path error: %s", exc)
+        elif neural_confidence >= NEURAL_CONFIDENCE_THRESHOLD:
+            print(f"║   Payload size mismatch: {len(payload_bytes)}B (expected 6B)       ║")
         else:
             print(f"║   Threshold:  Insufficient (Below {NEURAL_CONFIDENCE_THRESHOLD})            ║")
 
@@ -397,7 +400,8 @@ def verify_image():
         print(f"║ Path 3: Calculating Perceptual Fingerprint (pHash)...  ║")
         phash_int, phash_hex = _compute_phash(img)
         print(f"║   Query Hash: {phash_hex:<41}║")
-        
+
+        # Tight search: Hamming distance <= 10
         matches = db_module.find_by_hamming(phash_int, max_distance=HAMMING_MAX)
 
         if matches:
@@ -406,16 +410,42 @@ def verify_image():
             record       = best
             print(f"║   Result:     MATCH FOUND (Dist: {hamming_dist})                  ║")
             print(f"║   Match ID:   {record.get('id')[:28]:<28} ║")
-            
+
             status     = "VERIFIED_MODIFIED"
             confidence = max(0.0, 0.70 - hamming_dist * 0.03)
             _write_audit_log(record.get("id"), g.api_key["id"], status, confidence, hamming_dist, request_id)
             print(f"╚══════════════════ VERIFIED (MODIFIED) ═════════════════╝\n")
             return _build_verify_response(
-                status, confidence, record, watermark_extracted, c2pa_valid, hamming_dist, request_id
+                status, confidence, record, watermark_extracted, c2pa_valid, hamming_dist, request_id,
+                match_type="phash"
             )
         else:
-            print(f"║   Result:     NO MATCH FOUND                           ║")
+            print(f"║   Result:     NO MATCH (Tight ≤{HAMMING_MAX})                    ║")
+
+        # Wide pHash fallback — catches cropped/heavily edited images
+        # Higher false positive risk — confidence is reduced accordingly
+        # Do not widen beyond 20 bits (random 64-bit hashes have mean distance ~32)
+        HAMMING_WIDE = 20
+        print(f"║   Trying wide pHash search (≤{HAMMING_WIDE})...                 ║")
+        wide_matches = db_module.find_by_hamming(phash_int, max_distance=HAMMING_WIDE)
+
+        if wide_matches:
+            best         = wide_matches[0]
+            hamming_dist = best.get("hamming_dist", 0)
+            record       = best
+            print(f"║   Result:     WIDE MATCH FOUND (Dist: {hamming_dist})              ║")
+            print(f"║   Match ID:   {record.get('id')[:28]:<28} ║")
+
+            status     = "VERIFIED_MODIFIED"
+            confidence = max(0.45, 0.65 - hamming_dist * 0.01)
+            _write_audit_log(record.get("id"), g.api_key["id"], status, confidence, hamming_dist, request_id)
+            print(f"╚══════════════ VERIFIED (WIDE PHASH) ═══════════════════╝\n")
+            return _build_verify_response(
+                status, confidence, record, watermark_extracted, c2pa_valid, hamming_dist, request_id,
+                match_type="wide_phash"
+            )
+        else:
+            print(f"║   Result:     NO MATCH (Wide ≤{HAMMING_WIDE})                    ║")
 
         # ── No match ─────────────────────────────────────────────────────────────
         print(f"║ Final Verdict: {status:<40}║")
@@ -534,8 +564,10 @@ def legacy_register():
             else:
                 key_id = row[0]
 
-        payload_hex = secrets.token_hex(32)
-        payload_bytes = bytes.fromhex(payload_hex)
+        from provena_flask.services import payload_codec
+        record_id_int = int(record_id.replace('-', ''), 16) % (2**32)
+        payload_bytes = payload_codec.encode(record_id_int)
+        payload_hex = payload_bytes.hex()
         
         # 1. Neural Watermarking
         watermarked_img = neural_watermark_service.embed(img, payload_bytes)
@@ -892,6 +924,7 @@ def _build_verify_response(
     c2pa_valid: bool,
     hamming_dist: Optional[int],
     request_id: str,
+    match_type: Optional[str] = None,
 ):
     """Build the standardised verify JSON response."""
     body = {
@@ -902,6 +935,8 @@ def _build_verify_response(
         "hamming_distance":   hamming_dist,
         "request_id":         request_id,
     }
+    if match_type:
+        body["match_type"] = match_type
     if record:
         body["record_id"]      = record.get("id")
         body["registered_at"]  = record.get("registered_at") or record.get("created_at")

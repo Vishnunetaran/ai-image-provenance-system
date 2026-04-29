@@ -1,6 +1,0 @@
-﻿CREATE TABLE manifests (
-                id          TEXT PRIMARY KEY,
-                c2pa_json   TEXT NOT NULL,
-                signature   BLOB,
-                created_at  TEXT NOT NULL
-            )

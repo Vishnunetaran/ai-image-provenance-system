@@ -143,12 +143,12 @@ def find_by_hamming(phash_int: int, max_distance: int = 10) -> list[dict]:
     Returns:
         List of matching record dicts, ordered by hamming_dist ASC. Max 5 results.
     """
-    if max_distance > 10:
+    if max_distance > 20:
         logger.warning(
-            "find_by_hamming called with max_distance=%d > 10; clamping to 10 to avoid false positives",
+            "find_by_hamming called with max_distance=%d > 20; clamping to 20 to avoid false positives",
             max_distance,
         )
-        max_distance = 10
+        max_distance = 20
 
     # --- Redis cache ---
     if _REDIS_AVAILABLE and _redis_client:

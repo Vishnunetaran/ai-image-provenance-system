@@ -1,25 +1,20 @@
 """
 Payload Codec — T-010, T-011
-256-bit codeword encoding/decoding for neural watermark payloads.
+48-bit compact record-ID encoding for neural watermark payloads.
 
-Layout (256 bits total):
-  Data section  (20 bytes / 160 bits):
-    model_id_idx   : 1 byte  (8 bits)   -> index into registered model list (0-255)
-    timestamp_epoch: 5 bytes (40 bits)  -> Unix epoch seconds (valid until ~2109)
-    session_hmac   : 8 bytes (64 bits)  -> truncated HMAC(user_id+nonce)
-    phash_prefix   : 6 bytes (48 bits)  -> first 48 bits of original image pHash
+Layout (48 bits / 6 bytes total):
+  Data section  (4 bytes / 32 bits):
+    record_id : 4 bytes (big-endian unsigned int, max ~4 billion records)
 
-  ECC section    (12 bytes / 96 bits):
-    Reed-Solomon parity across the 20 data bytes.
-    Corrects up to 6 symbol errors (each symbol = 1 byte), i.e., ~30 burst bit errors.
+  ECC section   (2 bytes / 16 bits):
+    Reed-Solomon parity (1 ECC symbol = corrects 1 byte = 8 bits of error)
+
+# TODO: expand to 256-bit payload when GPU is available
 """
 from __future__ import annotations
 
-import hashlib
-import hmac
 import logging
 import struct
-from dataclasses import dataclass
 
 import reedsolo
 
@@ -28,102 +23,58 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-DATA_BYTES = 20       # 160 bits of actual provenance data
-ECC_BYTES  = 12       # 96 bits of Reed-Solomon parity
-TOTAL_BYTES = DATA_BYTES + ECC_BYTES   # 256 bits total
+DATA_BYTES  = 4        # 32 bits of record ID
+ECC_BYTES   = 2        # 16 bits of Reed-Solomon parity (nsym=1 → corrects 1 symbol)
+TOTAL_BYTES = DATA_BYTES + ECC_BYTES   # 6 bytes / 48 bits total
 
-# reedsolo uses GF(2^8) with symbol size = 1 byte.
-# nsym=12 corrects up to floor(12/2)=6 symbol errors, which covers ~30 burst bit errors.
+# RSCodec(1) → 1 ECC symbol → corrects up to 1 byte (8 bits) of error
 _RS = reedsolo.RSCodec(ECC_BYTES)
 
 
 class PayloadDecodeError(Exception):
-    """Raised when ECC correction fails (too many errors) or structure is invalid."""
-
-
-@dataclass
-class DecodedPayload:
-    """Decoded provenance payload fields."""
-    model_id_idx: int           # 0-255 model index
-    timestamp: int              # Unix epoch seconds
-    session_token: bytes        # 8-byte HMAC truncation
-    phash_prefix: int           # integer, lower 48 bits of pHash
+    """Raised when ECC correction fails or structure is invalid."""
 
 
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
-def encode(
-    model_id_idx: int,
-    timestamp: int,
-    session_token: bytes,
-    phash_int: int,
-) -> bytes:
+def encode(record_id: int) -> bytes:
     """
-    Encode provenance fields into a 32-byte (256-bit) Reed-Solomon codeword.
+    Encode a record_id into a 6-byte RS-ECC protected codeword.
 
     Args:
-        model_id_idx: Integer 0-255 representing the registered model.
-        timestamp:    Unix epoch integer (e.g., int(datetime.utcnow().timestamp())).
-        session_token: 8-byte HMAC truncation identifying the API session.
-        phash_int:    64-bit integer perceptual hash of the original image.
+        record_id: Non-negative integer (0 to 2^32 - 1).
 
     Returns:
-        32-byte bytes object (20 data bytes + 12 ECC bytes).
+        Exactly 6 bytes (4 data + 2 ECC parity).
 
     Raises:
-        ValueError: If any argument is out of range.
+        ValueError: If record_id is out of range.
     """
-    if not (0 <= model_id_idx <= 255):
-        raise ValueError(f"model_id_idx must be 0–255, got {model_id_idx}")
-    if not (0 <= timestamp <= 0xFF_FFFF_FFFF):
-        raise ValueError(f"timestamp out of 40-bit range: {timestamp}")
-    if len(session_token) < 8:
-        raise ValueError("session_token must be at least 8 bytes")
+    if not (0 <= record_id <= 0xFFFFFFFF):
+        raise ValueError(f"record_id must be 0–4294967295, got {record_id}")
 
-    # Build 20-byte data section
-    phash_prefix = phash_int & 0xFFFF_FFFF_FFFF   # keep lower 48 bits
+    data = struct.pack(">I", record_id)  # 4 bytes, big-endian unsigned int
+    assert len(data) == DATA_BYTES
 
-    data = struct.pack(
-        ">BQ6s",                                  # 1 + 8 + (skip 3 high bytes of timestamp) -> adjust
-        model_id_idx,
-        timestamp,                                # 8 bytes, but we only use 5; pack full then slice
-        phash_prefix.to_bytes(6, "big"),
-    )
-    # struct ">BQ6s" gives 1+8+6=15 bytes; we need to preserve only 5 timestamp bytes.
-    # Re-pack cleanly:
-    data = (
-        struct.pack("B", model_id_idx)            # 1 byte
-        + timestamp.to_bytes(5, "big")            # 5 bytes
-        + session_token[:8]                        # 8 bytes
-        + phash_prefix.to_bytes(6, "big")         # 6 bytes
-    )                                              # Total = 20 bytes
-
-    assert len(data) == DATA_BYTES, f"data section size mismatch: {len(data)}"
-
-    # Encode with Reed-Solomon → 20 + 12 = 32 bytes
     encoded = bytes(_RS.encode(bytearray(data)))
-
-    logger.debug(
-        "Encoded payload: model_id_idx=%d timestamp=%d phash_prefix=0x%012x",
-        model_id_idx, timestamp, phash_prefix,
-    )
+    logger.debug("Encoded payload: record_id=%d -> %s", record_id, encoded.hex())
     return encoded
 
 
-def decode(codeword: bytes) -> DecodedPayload:
+def decode(codeword: bytes) -> int:
     """
-    Decode a 32-byte codeword, applying ECC correction.
+    Decode a 6-byte codeword, applying ECC correction.
 
     Args:
-        codeword: 32-byte bytes object (output from encode(), possibly with errors).
+        codeword: 6-byte bytes object (output from encode(), possibly with errors).
 
     Returns:
-        DecodedPayload with the recovered fields.
+        The recovered record_id as an integer.
 
     Raises:
-        PayloadDecodeError: If ECC correction fails (too many errors) or length is wrong.
+        PayloadDecodeError: If ECC correction fails or length is wrong.
     """
     if len(codeword) != TOTAL_BYTES:
         raise PayloadDecodeError(
@@ -144,39 +95,6 @@ def decode(codeword: bytes) -> DecodedPayload:
             f"Corrected data length {len(data)} != expected {DATA_BYTES}"
         )
 
-    model_id_idx = struct.unpack("B", data[0:1])[0]
-    timestamp    = int.from_bytes(data[1:6], "big")
-    session_token = data[6:14]
-    phash_prefix  = int.from_bytes(data[14:20], "big")
-
-    logger.debug(
-        "Decoded payload: model_id_idx=%d timestamp=%d phash_prefix=0x%012x",
-        model_id_idx, timestamp, phash_prefix,
-    )
-    return DecodedPayload(
-        model_id_idx=model_id_idx,
-        timestamp=timestamp,
-        session_token=session_token,
-        phash_prefix=phash_prefix,
-    )
-
-
-# ---------------------------------------------------------------------------
-# Helper: generate a session token from a user id + nonce
-# ---------------------------------------------------------------------------
-
-def make_session_token(user_id: str, nonce: str, secret: bytes) -> bytes:
-    """
-    Derive an 8-byte session token via HMAC-SHA256(secret, user_id|nonce).
-
-    Args:
-        user_id: Caller's identifier string.
-        nonce:   Random nonce string (e.g., UUID).
-        secret:  HMAC secret key bytes (from env).
-
-    Returns:
-        First 8 bytes of HMAC-SHA256 digest.
-    """
-    message = f"{user_id}:{nonce}".encode()
-    digest = hmac.new(secret, message, hashlib.sha256).digest()
-    return digest[:8]
+    record_id = struct.unpack(">I", data)[0]
+    logger.debug("Decoded payload: record_id=%d", record_id)
+    return record_id

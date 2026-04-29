@@ -78,9 +78,9 @@ This system is fundamentally a **cryptographic provenance platform**, not a wate
 │  └────────────────────────────────────────────────────────┘     │
 │  ┌────────────────────────────────────────────────────────┐     │
 │  │  Invisible Watermarking (SUPPLEMENTARY TRACE)          │     │
-│  │  • Hybrid DWT+DCT embedding                            │     │
+│  │  • Deep Learning embedding (Adobe TrustMark)           │     │
 │  │  • Forensic trace when extractable                     │     │
-│  │  • May fail under compression/resizing                 │     │
+│  │  • Extremely robust to compression and resizing        │     │
 │  └────────────────────────────────────────────────────────┘     │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -110,9 +110,9 @@ This system is fundamentally a **cryptographic provenance platform**, not a wate
 
 ### 🎨 Forensic Watermarking (Supplementary)
 
-- **Hybrid DWT+DCT**: Frequency-domain embedding
-- **Imperceptible**: PSNR ≥40dB, SSIM ≥0.95
-- **Forensic Trace**: Provides additional evidence when extractable
+- **Deep Learning Embedding**: Adobe TrustMark Q-variant (PyTorch)
+- **Imperceptible**: Preserves high PSNR/SSIM visual quality
+- **Forensic Trace**: Robust extraction even after malicious cropping/resizing
 - **Honest Limitations**: May fail under JPEG compression, resizing, format conversion
 
 ### 📊 Forensic Reporting
@@ -404,7 +404,7 @@ Built with:
 - **Flask**: Web framework
 - **cryptography**: Ed25519 signatures
 - **OpenCV**: Image processing
-- **PyWavelets**: DWT watermarking
+- **PyTorch & TrustMark**: Deep learning neural watermarking
 - **SQLite**: Append-only registry
 
 Inspired by:
