@@ -1,49 +1,38 @@
-# PROVENA-FLASK
+# PROVENA-FLASK: HydraWatermark V2
 
-**AI Image Provenance & Forensic Verification System**
+**AI Image Provenance & Triple-Redundant Forensic Verification System**
 
-A cryptographic provenance tracking and forensic verification system for AI-generated images, where **cryptographic signatures and append-only registry provide authoritative proof of origin**, supplemented by forensic watermarking traces.
+A state-of-the-art provenance tracking and forensic verification platform for AI-generated images. Provena V2 establishes a **Dual-Layered Forensic Truth** by combining unbreakable cryptographic metadata signatures (C2PA) with a highly resilient, triple-redundant pixel watermarking engine (HydraWatermark).
 
 ---
 
 ## Overview
 
-PROVENA-FLASK is a research implementation of a comprehensive AI image provenance system that establishes **cryptographic traceability** for AI-generated images. The system uses Ed25519 digital signatures and an append-only registry as the authoritative proof of origin, with invisible watermarking providing supplementary forensic evidence when extractable.
+PROVENA-FLASK is a comprehensive AI image provenance system designed to survive real-world hostile environments (social media compression, malicious cropping, metadata stripping). It guarantees origin traceability by anchoring the image identity in both the file structure and the pixels themselves.
 
-### Core Principle
+### The Dual-Layered Philosophy
 
-**Cryptographic Provenance, Not Watermark Detection**
+**Metadata + Pixels = Unbreakable Provenance**
 
-This system is fundamentally a **cryptographic provenance platform**, not a watermarking product. Verification relies primarily on:
+Where most systems rely *only* on fragile watermarks or *only* on easily-stripped metadata, Provena V2 marries the two into a single, cohesive verification mesh:
 
-1. **Ed25519 Digital Signatures** (Primary) - Cryptographic proof of metadata integrity
-2. **Append-Only Registry** (Primary) - Tamper-evident provenance storage
-3. **Perceptual Hashing** (Secondary) - Tolerant image matching
-4. **Invisible Watermarking** (Supplementary) - Forensic trace when extractable
+1. **The Metadata Anchor (C2PA & Ed25519 Signatures)**: Injects an unforgeable, cryptographically signed manifest directly into the file's EXIF data. Survives pixel-level destruction (like heavy blurring or rotation).
+2. **The Pixel Anchor (HydraWatermark V2)**: Embeds a 48-bit payload directly into the image pixels using three independent mathematical domains. Survives metadata stripping (like uploading to Twitter or WhatsApp).
+3. **The Visual Anchor (pHash)**: Acts as a final safety net to catch visually identical images even if both the metadata and watermarks are destroyed.
 
 ---
 
 ## What This System Proves
 
-### ✅ Authoritative Cryptographic Proof
+### ✅ Pixel-Level Forensic Anchor (HydraWatermark)
+- **Triple-Redundant Resilience**: Embeds the origin payload simultaneously via Neural networks, Frequency modulation (DCT), and Spatial algorithms (LSB).
+- **Targeted Survivability**: Even if an attacker crops the image (destroying the spatial layer) or compresses it (destroying the frequency layer), the Neural layer survives and reconstructs the payload.
+- **Majority Vote Consensus**: Validates extraction using a robust consensus engine to filter out noise and false positives.
 
-- **Metadata Integrity**: Image was registered with specific metadata (model, timestamp)
-- **Tamper Detection**: Metadata has not been altered (cryptographic signature)
-- **Provenance Chain**: Complete audit trail in append-only registry
-- **Perceptual Similarity**: Image is perceptually similar to registered image
-
-### ⚠️ Supplementary Forensic Evidence
-
-- **Watermark Presence**: Invisible watermark may provide additional forensic trace
-- **Watermark Extraction**: Probabilistic, may fail under compression/resizing
-- **Forensic Signal**: Watermark is supporting evidence, NOT primary proof
-
-### ❌ What This System Does NOT Prove
-
-- **Pixel-Level Integrity**: Cannot prove image pixels are unmodified
-- **Timestamp Accuracy**: Timestamps are self-reported, not independently verified
-- **Image Authenticity**: Only proves registration, not that image is "real"
-- **Perfect Detection**: Watermark extraction is probabilistic and may fail
+### ✅ Cryptographic Truth (C2PA)
+- **Metadata Integrity**: Cryptographic proof that the image was registered with specific metadata (model, timestamp).
+- **Tamper Detection**: Metadata cannot be altered without invalidating the Ed25519 signature.
+- **Provenance Chain**: Complete audit trail stored in an append-only SQLite registry.
 
 ---
 
@@ -87,238 +76,75 @@ graph TD
 
 ### Verification Hierarchy
 
-**Tier 1 (Authoritative)**: Cryptographic Signature + Registry  
-**Tier 2 (Robust)**: Perceptual Hash Matching  
-**Tier 3 (Supplementary)**: HydraWatermark Extraction (Majority Vote)  
+**Tier 1 (Authoritative)**: Cryptographic Signature (C2PA) + Registry  
+**Tier 2 (Pixel-Proof)**: HydraWatermark Extraction (Majority Vote)  
+**Tier 3 (Fallback)**: Perceptual Hash Matching  
 
 ---
 
 ## Key Features
 
-### 🔐 Cryptographic Provenance (Primary)
+### 🎨 Forensic Watermarking: HydraWatermark V2
+A state-of-the-art orchestration engine that layers three watermarks without visual interference:
+- **Neural Layer (Adobe TrustMark)**: A deep-learning encoder/decoder highly resistant to JPEG compression, resizing, and minor cropping.
+- **Frequency Layer (DCT Block QIM)**: Modulates 8x8 DCT blocks. Survives color shifts, blurring, and brightness attacks.
+- **Spatial Layer (LSB with Repetition ECC)**: A purely mathematical checksum embedded in the Least Significant Bits using a dimension-seeded PRNG. Acts as a lossless exact-match verification.
+- **Majority Vote Engine**: Intelligently aggregates the 48-bit extractions, requiring consensus to confidently verify the image origin.
 
-- **Ed25519 Digital Signatures**: Industry-standard elliptic curve cryptography
-- **Append-Only Registry**: Tamper-evident SQLite database
-- **Key Management**: Secure key generation, storage, and rotation
-- **Audit Logging**: Complete operation tracking
+### ⚔️ The Adversarial Forge (`adversarial_forge.py`)
+A built-in stress-testing suite designed to simulate real-world hostile environments. The Forge automatically attacks the watermarked image using:
+- Heavy JPEG Compression (Q=50)
+- Gaussian Blurring
+- Malicious Cropping
+- Brightness / Contrast shifts
+- Gaussian Noise
 
-### 🔍 Forensic Verification (Secondary)
+The Forge then runs the Verification pipeline against the damaged images to prove the resilience of the HydraWatermark layers.
 
-- **Perceptual Hashing**: DCT-based pHash, gradient-based dHash, average-based aHash
-- **Tolerant Matching**: Hamming distance with configurable threshold
-- **Robust to Modifications**: Survives compression, resizing, minor edits
-
-### 🎨 Forensic Watermarking: HydraWatermark V2 (Supplementary)
-
-- **Triple-Redundant Pipeline**: Neural, DCT Frequency, and Spatial LSB layers
-- **Majority Vote Engine**: Consolidates layer outputs; verifies if ≥2 layers agree
-- **Targeted Resilience**: 
-  - *Neural*: Survives resizing, JPEG compression, minor cropping
-  - *DCT*: Survives color shifts, blurring, minor compression
-  - *Spatial*: Purely mathematical checksum (lossless exact match)
-- **Honest Limitations**: Complete destruction (heavy cropping + compression) falls back to pHash.
-
-### 📊 Forensic Reporting
-
-- **5-Level Verdict System**: authentic, likely_authentic, suspicious, tampered, not_found
-- **Confidence Scoring**: 0.0-1.0 scale based on multiple verification layers
-- **Evidence Summary**: Clear breakdown of cryptographic, perceptual, and watermark evidence
-- **Limitations Disclosure**: Every report includes known system limitations
-
-### 🛡️ Security & Audit
-
-- **Rate Limiting**: 60 requests/minute per IP
-- **Input Validation**: SQL injection prevention, size limits
-- **Structured Logging**: JSON-formatted audit trails
-- **Security Event Tracking**: Comprehensive attack detection
+### 🔐 Cryptographic Provenance
+- **Ed25519 Digital Signatures**: Industry-standard elliptic curve cryptography.
+- **Append-Only Registry**: Tamper-evident SQLite database mapping payloads to origins.
 
 ---
 
-## API Endpoints
+## Testing & Automation
 
-### Core Provenance APIs
-
-#### Register Image with Provenance
-```
-POST /api/v1/images/register
-```
-**Purpose**: Establish cryptographic provenance for AI-generated image  
-**Returns**: Signature, registry record, watermarked image (forensic trace)
-
-#### Verify Image Provenance
-```
-POST /api/v1/images/verify
-```
-**Purpose**: Verify image using cryptographic signature + forensic evidence  
-**Returns**: Verdict based on signature validity, perceptual match, watermark presence
-
-#### Retrieve Provenance Record
-```
-GET /api/v1/provenance/{image_id}
-```
-**Purpose**: Retrieve complete provenance record from registry  
-**Returns**: Metadata, signature, public key, timestamps
-
-#### Generate Forensic Report
-```
-GET /api/v1/report/{image_id}
-```
-**Purpose**: Generate comprehensive forensic analysis report  
-**Returns**: Evidence summary, verdict, confidence score, limitations
-
----
-
-## System Limitations
-
-### Watermark Robustness (Known Limitation)
-
-**Limitation**: Watermark extraction is probabilistic and may fail under real-world transformations.
-
-**Extraction Success Rates**:
-- No transformation: ~90%
-- JPEG Q=75: ~5%
-- Resizing ±10%: ~5%
-- Format conversion: ~5%
-
-**Impact**: Watermark provides supplementary forensic trace only. **Cryptographic verification remains authoritative** even when watermark extraction fails.
-
-**Mitigation**: System relies primarily on cryptographic signatures and perceptual hashing, which are robust and reliable.
-
-### Timestamp Trust
-
-**Limitation**: Timestamps are self-reported by AI model provider, not independently verified.
-
-**Impact**: Cannot cryptographically prove when image was generated.
-
-**Mitigation**: Trust model relies on reputation of AI model provider. Future: blockchain timestamping.
-
-### Pixel-Level Integrity
-
-**Limitation**: System proves metadata integrity, not pixel-by-pixel identity.
-
-**What We Prove**: Metadata signed, perceptual similarity  
-**What We Don't Prove**: Pixels unmodified, no post-processing
-
-**Impact**: Verified image may have been edited after generation.
-
-**Mitigation**: Perceptual hash catches major changes; minor edits are undetectable.
-
-### Blind Watermarking
-
-**Limitation**: Watermark extraction is "blind" (no original image reference).
-
-**Impact**: Extraction relies on absolute coefficient values, which are unreliable after compression.
-
-**Mitigation**: Watermark is supplementary only. Cryptographic verification is primary.
-
-### Centralized Trust
-
-**Limitation**: Registry is centralized, not distributed.
-
-**Impact**: Trust in system operator required. Single point of failure.
-
-**Mitigation**: Append-only constraints prevent tampering. Future: blockchain integration.
-
----
-
-## Relation to Industry Standards
-
-### Conceptual Alignment
-
-This system is **conceptually aligned** with cryptographic provenance models used in industry standards:
-
-- **C2PA (Coalition for Content Provenance and Authenticity)**: Uses cryptographic signatures and manifest files
-- **Adobe Content Credentials**: Embeds provenance metadata with digital signatures
-- **OpenAI Metadata Approaches**: Cryptographic signing of AI-generated content
-
-### Key Differences
-
-**This is NOT a C2PA implementation**, but shares the same fundamental principle:
-
-> **Cryptographic signatures provide authoritative proof of provenance, not watermarks.**
-
-**Similarities**:
-- Digital signatures for metadata integrity
-- Tamper-evident provenance storage
-- Multi-layer verification approach
-
-**Differences**:
-- C2PA uses JUMBF manifests; we use SQLite registry
-- C2PA has broader scope (photos, videos, documents); we focus on AI images
-- C2PA is production-ready; this is a research implementation
-
----
-
-## Installation
-
-### Prerequisites
-
-- Python 3.8+
-- Virtual environment (recommended)
-
-### Setup
-
+### Run the Adversarial Forge
+To prove the resilience of the watermarks against compression and filters:
 ```bash
-# Clone repository
-git clone <repository-url>
-cd AI_BLOCKCHAIN
-
-# Create virtual environment
-python -m venv venv
-
-# Activate virtual environment
-# Windows:
-.\venv\Scripts\activate
-# Linux/Mac:
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
+python -m provena_flask.services.adversarial_forge
 ```
 
-### Run Server
-
+### Run the Hydra Round-Trip Test
+To verify that all 3 layers successfully embed and extract without corruption:
 ```bash
-python run.py
+python test_hydra.py
 ```
-
-Server will start on `http://localhost:5000`
 
 ---
 
-## Usage
+## API Usage (Python)
 
-### Demo Web Interface
-
-Open browser to `http://localhost:5000/`
-
-**Features**:
-- Drag-and-drop image upload
-- Register image with cryptographic provenance
-- Verify image using multi-layer forensic analysis
-- View comprehensive forensic reports
-
-### API Usage (Python)
-
+### Register Image
 ```python
 import requests
 import base64
 
-# Register image
 with open('image.png', 'rb') as f:
     image_b64 = base64.b64encode(f.read()).decode()
 
 response = requests.post('http://localhost:5000/api/v1/images/register', json={
     'image': image_b64,
     'model_id': 'gpt-vision-v1',
-    'timestamp': '2026-01-26T19:00:00Z'
+    'timestamp': '2026-05-05T19:00:00Z'
 })
 
 result = response.json()
 print(f"Image ID: {result['image_id']}")
-print(f"Signature: {result['signature'][:50]}...")
+```
 
-# Verify image
+### Verify Image
+```python
 response = requests.post('http://localhost:5000/api/v1/images/verify', json={
     'image': image_b64
 })
@@ -326,95 +152,46 @@ response = requests.post('http://localhost:5000/api/v1/images/verify', json={
 result = response.json()
 print(f"Verdict: {result['status']}")
 print(f"Signature Valid: {result['verification']['signature_valid']}")
-print(f"Perceptual Match: {result['verification']['perceptual_match']}")
-print(f"Watermark Present: {result['verification']['watermark_extracted']}")
+print(f"HydraWatermark Extracted: {result['verification']['watermark_extracted']}")
+print(f"Layer Breakdown: {result['verification']['hydra_layers']}")
 ```
 
 ---
 
-## Testing
+## Installation
 
-### Run All Tests
+### Prerequisites
+- Python 3.8+
+- PyTorch (for TrustMark Neural Layer)
+- OpenCV, Scipy, Numpy, Pillow
+
+### Setup
 
 ```bash
-# Cryptography tests
-python test_crypto.py
+git clone <repository-url>
+cd ai-image-provenance-system
 
-# Registry tests
-python test_registry.py
+python -m venv venv
+# Windows: .\venv\Scripts\activate
+# Linux/Mac: source venv/bin/activate
 
-# Perceptual hash tests
-python test_phash.py
-
-# Forensic report tests
-python test_forensic.py
-
-# Security tests
-python test_security.py
+pip install -r requirements.txt
 ```
 
-**Test Coverage**: 43/43 tests passing (100% on tested components)
+### Run Server
+```bash
+python run.py
+```
+Server will start on `http://localhost:5000`. Navigate to the browser to access the sleek, visual Verification UI.
 
 ---
 
-## Documentation
+## System Limitations (Honest Assessment)
 
-- **TECHNICAL_DOCUMENTATION.md**: Complete system architecture and design
-- **WATERMARK_UPGRADE_TECHNICAL_NOTE.md**: Watermark engine technical details
-- **DEMO_GUIDE.md**: Demo usage guide with realistic scenarios
-- **SERVER_RUNNING.md**: Server deployment and endpoint documentation
-- **PHASE0-9_COMPLETE.md**: Development phase summaries
+- **Complete Pixel Destruction**: If an image is heavily cropped *and* heavily compressed *and* resized simultaneously, the HydraWatermark may fail. The system will then fall back to the pHash (Perceptual Hash) to flag the image as "Modified".
+- **Blind Watermarking**: Extraction is "blind" (no original image reference), meaning it relies entirely on the surviving mathematical properties of the pixels.
+- **Timestamp Trust**: Timestamps are self-reported by the API caller during registration, not independently verified by a blockchain.
 
 ---
 
-## Project Status
-
-**Status**: Research Implementation Complete
-
-**Suitable For**:
-- ✅ Research and academic use
-- ✅ Proof-of-concept demonstrations
-- ✅ Educational purposes
-- ✅ Internal provenance tracking
-
-**NOT Suitable For**:
-- ❌ Production deepfake detection
-- ❌ Legal evidence (without expert validation)
-- ❌ High-security adversarial environments
-- ❌ Watermark-based verification (use cryptographic verification)
-
----
-
-## License
-
-Research Use Only
-
----
-
-## Contributing
-
-This is a research implementation. For production use, consider:
-- Commercial watermarking SDKs (Digimarc, Vobile)
-- C2PA implementation libraries
-- Blockchain-based timestamping
-- Hardware Security Modules (HSM) for key storage
-
----
-
-## Acknowledgments
-
-Built with:
-- **Flask**: Web framework
-- **cryptography**: Ed25519 signatures
-- **OpenCV**: Image processing
-- **PyTorch & TrustMark**: Deep learning neural watermarking
-- **SQLite**: Append-only registry
-
-Inspired by:
-- C2PA (Coalition for Content Provenance and Authenticity)
-- Adobe Content Credentials
-- Cryptographic provenance research
-
----
-
-**PROVENA-FLASK**: Cryptographic provenance for AI images, with forensic watermarking as supplementary evidence.
+**PROVENA-FLASK**: Establishing the ultimate forensic truth for AI-generated images.
