@@ -28,6 +28,8 @@ from provena_flask.errors import bad_request, internal_error, not_found, error_r
 from provena_flask.models import db as db_module
 from provena_flask.services import c2pa_service, neural_watermark_service
 from provena_flask.services import payload_codec
+from provena_flask.services import hydra_watermark
+from provena_flask.services import adversarial_forge
 
 logger = logging.getLogger(__name__)
 
@@ -205,18 +207,9 @@ def register_image():
             logger.error("DB insert error: %s", exc)
             return internal_error("Failed to persist provenance record")
 
-        # ── Neural watermark embedding (48-bit payload) ──────────────────────
-        print(f"╟────────────────────────────────────────────────────────╢")
-        print(f"║ Neural Path: Embedding TrustMark (48-bit payload)...   ║")
-        try:
-            watermarked_img = neural_watermark_service.embed(img, neural_payload)
-            print(f"║   Embedding: SUCCESS                                   ║")
-        except Exception as exc:
-            print(f"║   Embedding: WARNING ({str(exc)[:25]}...) ║")
-            logger.warning("Neural embedding error: %s", exc)
-            watermarked_img = img.copy()
-
-        # --- C2PA manifest generation ---
+        # --- C2PA manifest generation (FIRST — before watermarking) ---
+        # C2PA re-processes pixels, so it must run before HydraWatermark
+        # to avoid corrupting the DCT and spatial watermark layers.
         try:
             print(f"╟────────────────────────────────────────────────────────╢")
             real_manifest_id, signed_image_bytes = c2pa_service.create_manifest(
@@ -240,16 +233,33 @@ def register_image():
                 manifest_id = real_manifest_id
             print(f"║ C2PA Manifest ID: {manifest_id[:36]:<36} ║")
             print(f"║   Injection: SUCCESS                                   ║")
+            # Re-open C2PA-processed image for watermarking
+            c2pa_img = Image.open(io.BytesIO(signed_image_bytes)).convert("RGB")
         except Exception as exc:
             print(f"║   Injection: FAILED ({str(exc)[:25]}...)    ║")
             logger.error("C2PA embedding failed: %s", exc)
-            buf = io.BytesIO()
-            watermarked_img.save(buf, format="PNG")
-            signed_image_bytes = buf.getvalue()
+            c2pa_img = img.copy()
 
-        # Response
+        # ── HydraWatermark embedding (3 layers × 48-bit payload) ─────────────
+        # Applied AFTER C2PA so watermark is the outermost layer (preserved)
+        print(f"╟────────────────────────────────────────────────────────╢")
+        print(f"║ HydraWatermark: Embedding 3 layers (48-bit payload)... ║")
+        try:
+            watermarked_img = hydra_watermark.embed(c2pa_img, neural_payload)
+            print(f"║   Embedding: SUCCESS (Neural + DCT + Spatial)          ║")
+        except Exception as exc:
+            print(f"║   Embedding: WARNING ({str(exc)[:25]}...) ║")
+            logger.warning("HydraWatermark embedding error: %s", exc)
+            watermarked_img = c2pa_img.copy()
+
+        # Response — final image has C2PA EXIF metadata + 3 watermark layers
         wm_buf = io.BytesIO()
-        watermarked_img.save(wm_buf, format="PNG")
+        # Preserve EXIF metadata from C2PA step so C2PA manifest survives
+        exif_data = c2pa_img.info.get("exif", b"")
+        if exif_data:
+            watermarked_img.save(wm_buf, format="PNG", exif=exif_data)
+        else:
+            watermarked_img.save(wm_buf, format="PNG")
         watermarked_b64 = base64.b64encode(wm_buf.getvalue()).decode()
 
         response_body = {
@@ -352,18 +362,24 @@ def verify_image():
             print(f"║   Result: C2PA ERROR ({str(exc)[:25]}...)     ║")
             logger.warning("C2PA check error: %s", exc)
 
-        # ── Path 2: Neural watermark extraction (TrustMark 48-bit) ────────────
+        # ── Path 2: HydraWatermark extraction (3 layers + majority vote) ────
         print(f"╟────────────────────────────────────────────────────────╢")
-        print(f"║ Path 2: Probing Neural Watermark (TrustMark)...        ║")
+        print(f"║ Path 2: HydraWatermark Extraction (3 layers)...        ║")
         try:
-            payload_bytes, neural_confidence = neural_watermark_service.extract(img)
-            print(f"║   Extraction: SUCCESS (Conf: {neural_confidence:.3f})              ║")
+            vote_result = hydra_watermark.extract(img)
+            payload_bytes = vote_result.payload
+            neural_confidence = vote_result.confidence
+            print(f"║   Votes: {vote_result.winner_votes}/{vote_result.total_votes} layers agree (Conf: {neural_confidence:.3f})       ║")
+            for lname, linfo in vote_result.breakdown.items():
+                status_char = "✓" if linfo.get("voted") else "✗"
+                print(f"║   {status_char} {lname[:20]:<20} conf={linfo.get('confidence', 0):.3f}       ║")
         except Exception as exc:
             print(f"║   Extraction: FAILED ({str(exc)[:20]}...)        ║")
-            logger.warning("Neural extraction error: %s", exc)
+            logger.warning("HydraWatermark extraction error: %s", exc)
             payload_bytes, neural_confidence = b"", 0.0
+            vote_result = None
 
-        if neural_confidence >= NEURAL_CONFIDENCE_THRESHOLD and len(payload_bytes) == 6:
+        if neural_confidence >= 0.5 and len(payload_bytes) == 6:
             try:
                 record_id_int = payload_codec.decode(payload_bytes)
                 print(f"║   Correction: RS-ECC SUCCESS (ID: {record_id_int})         ║")
@@ -380,7 +396,7 @@ def verify_image():
                     print(f"╚══════════════════════ VERIFIED ════════════════════════╝\n")
                     return _build_verify_response(
                         status, confidence, record, watermark_extracted, c2pa_valid, hamming_dist, request_id,
-                        match_type="neural"
+                        match_type="hydra_neural"
                     )
                 else:
                     print(f"║   Match:      NOT FOUND (Stale record?)                ║")
@@ -389,11 +405,11 @@ def verify_image():
                 logger.debug("ECC decode failed (falling through to pHash): %s", exc)
             except Exception as exc:
                 print(f"║   Error:      {str(exc)[:30]:<30} ║")
-                logger.warning("Neural path error: %s", exc)
-        elif neural_confidence >= NEURAL_CONFIDENCE_THRESHOLD:
-            print(f"║   Payload size mismatch: {len(payload_bytes)}B (expected 6B)       ║")
+                logger.warning("HydraWatermark path error: %s", exc)
+        elif payload_bytes and len(payload_bytes) == 6:
+            print(f"║   Confidence too low: {neural_confidence:.3f} (need ≥0.5)           ║")
         else:
-            print(f"║   Threshold:  Insufficient (Below {NEURAL_CONFIDENCE_THRESHOLD})            ║")
+            print(f"║   No valid payload extracted from any layer             ║")
 
         # ── Path 3: pHash Hamming-distance fallback ───────────────────────────────
         print(f"╟────────────────────────────────────────────────────────╢")
@@ -569,29 +585,38 @@ def legacy_register():
         payload_bytes = payload_codec.encode(record_id_int)
         payload_hex = payload_bytes.hex()
         
-        # 1. Neural Watermarking
-        watermarked_img = neural_watermark_service.embed(img, payload_bytes)
-        
-        # 2. C2PA Embedding
-        # Convert PIL back to bytes for C2PA
-        out_buf = io.BytesIO()
-        watermarked_img.save(out_buf, format="PNG")
-        watermarked_bytes = out_buf.getvalue()
-        
+        # 1. C2PA Embedding FIRST (on the original image)
+        # C2PA re-processes pixels, so we do this before watermarking
+        # to avoid corrupting the watermark layers.
         # Parse timestamp string to datetime object
         try:
             ts_dt = datetime.fromisoformat(data["timestamp"].replace("Z", "+00:00"))
         except (ValueError, TypeError):
             ts_dt = datetime.now(timezone.utc)
 
-        manifest_id, final_bytes = c2pa_service.create_manifest(
-            image_bytes=watermarked_bytes,
+        manifest_id, c2pa_bytes = c2pa_service.create_manifest(
+            image_bytes=image_bytes,
             model_id=data["model_id"],
             creator_did="did:provena:demo",
             timestamp=ts_dt
         )
+
+        # 2. HydraWatermark Embedding (3 layers) on top of C2PA output
+        # Re-open the C2PA-processed image so watermark is the LAST thing applied
+        c2pa_img = Image.open(io.BytesIO(c2pa_bytes))
+        c2pa_exif = c2pa_img.info.get("exif", b"")
+        c2pa_img = c2pa_img.convert("RGB")
+        watermarked_img = hydra_watermark.embed(c2pa_img, payload_bytes)
+
+        # 3. Final image bytes (watermark + preserved C2PA EXIF metadata)
+        final_buf = io.BytesIO()
+        if c2pa_exif:
+            watermarked_img.save(final_buf, format="PNG", exif=c2pa_exif)
+        else:
+            watermarked_img.save(final_buf, format="PNG")
+        final_bytes = final_buf.getvalue()
         
-        # 3. Database Insertion
+        # 4. Database Insertion
         record = {
             "id": record_id,
             "image_phash_int": phash_int,
@@ -650,21 +675,31 @@ def legacy_verify():
         if c2pa_valid:
             record = _get_record_by_manifest(manifest_result.manifest_id)
 
-        # --- Path 2: Neural Extraction ---
+        # --- Path 2: HydraWatermark Extraction (3 layers) ---
         watermark_extracted = False
+        match_type = None
+        hydra_breakdown = {}
         if not record:
             try:
-                payload_bytes, neural_conf = neural_watermark_service.extract(img)
-                if neural_conf >= NEURAL_CONFIDENCE_THRESHOLD:
-                    watermark_extracted = True
-                    record = _get_record_by_payload(payload_bytes.hex())
+                vote_result = hydra_watermark.extract(img)
+                hydra_breakdown = vote_result.breakdown
+                if vote_result.confidence >= 0.5 and len(vote_result.payload) == 6:
+                    record = _get_record_by_payload(vote_result.payload.hex())
+                    if record:
+                        # Only mark watermark as extracted if it matched a real record
+                        watermark_extracted = True
+                        match_type = "hydra_neural"
             except Exception:
                 pass
         else:
-            # If we found it via C2PA, let's still check if watermark is there for UI feedback
+            match_type = "c2pa"
             try:
-                _, neural_conf = neural_watermark_service.extract(img)
-                watermark_extracted = (neural_conf >= NEURAL_CONFIDENCE_THRESHOLD)
+                vote_result = hydra_watermark.extract(img)
+                hydra_breakdown = vote_result.breakdown
+                # For C2PA path: check if extracted payload matches the SAME record
+                if vote_result.confidence >= 0.5 and len(vote_result.payload) == 6:
+                    wm_record = _get_record_by_payload(vote_result.payload.hex())
+                    watermark_extracted = (wm_record is not None and wm_record.get("id") == record.get("id"))
             except Exception:
                 pass
 
@@ -676,6 +711,7 @@ def legacy_verify():
             if matches:
                 record = matches[0]
                 perceptual_match = True
+                match_type = "phash"
         else:
             # If we already have a record, confirm it matches the image pHash roughly
             rec_phash_int = int(record.get("image_phash_int") or 0)
@@ -686,10 +722,12 @@ def legacy_verify():
             return jsonify({
                 "status": "not_found",
                 "message": "No provenance record found",
+                "match_type": None,
                 "verification": {
                     "watermark_extracted": False,
                     "signature_valid": False,
-                    "perceptual_match": False
+                    "perceptual_match": False,
+                    "hydra_layers": {}
                 }
             }), 404
 
@@ -708,6 +746,7 @@ def legacy_verify():
         return jsonify({
             "status": status,
             "image_id": record.get("id"),
+            "match_type": match_type,
             "provenance": {
                 "model_id": record.get("model_id"),
                 "timestamp": record.get("registered_at") or record.get("created_at"),
@@ -716,9 +755,17 @@ def legacy_verify():
                 "created_at": record.get("created_at"),
             },
             "verification": {
-                "watermark_extracted": watermark_extracted,
-                "signature_valid": c2pa_valid,
-                "perceptual_match": perceptual_match,
+                "watermark_extracted": bool(watermark_extracted),
+                "signature_valid": bool(c2pa_valid),
+                "perceptual_match": bool(perceptual_match),
+                "hydra_layers": {
+                    k: {
+                        "confidence": float(v.get("confidence", 0)),
+                        # Only show as "voted" (green tick) if we actually matched a real watermark payload
+                        "voted": bool(watermark_extracted and v.get("voted", False))
+                    } 
+                    for k, v in hydra_breakdown.items()
+                },
             },
         }), 200
     except Exception as exc:

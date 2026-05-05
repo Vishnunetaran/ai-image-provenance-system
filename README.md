@@ -49,47 +49,47 @@ This system is fundamentally a **cryptographic provenance platform**, not a wate
 
 ## Architecture
 
-### System Components
+### System Flow (V2)
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                   CRYPTOGRAPHIC PROVENANCE LAYER                 │
-│  ┌────────────────────────────────────────────────────────┐     │
-│  │  Ed25519 Digital Signatures (PRIMARY PROOF)            │     │
-│  │  • Metadata signing with private key                   │     │
-│  │  • Signature verification with public key              │     │
-│  │  • Cryptographically unforgeable                       │     │
-│  └────────────────────────────────────────────────────────┘     │
-│  ┌────────────────────────────────────────────────────────┐     │
-│  │  Append-Only Registry (AUTHORITATIVE STORAGE)          │     │
-│  │  • SQLite with append-only constraints                 │     │
-│  │  • Tamper-evident provenance records                   │     │
-│  │  • Complete audit trail                                │     │
-│  └────────────────────────────────────────────────────────┘     │
-└─────────────────────────────────────────────────────────────────┘
-                             ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    FORENSIC VERIFICATION LAYER                   │
-│  ┌────────────────────────────────────────────────────────┐     │
-│  │  Perceptual Hashing (SECONDARY VERIFICATION)           │     │
-│  │  • pHash, dHash, aHash                                 │     │
-│  │  • Tolerant to minor modifications                     │     │
-│  │  • Hamming distance matching                           │     │
-│  └────────────────────────────────────────────────────────┘     │
-│  ┌────────────────────────────────────────────────────────┐     │
-│  │  Invisible Watermarking (SUPPLEMENTARY TRACE)          │     │
-│  │  • Deep Learning embedding (Adobe TrustMark)           │     │
-│  │  • Forensic trace when extractable                     │     │
-│  │  • Extremely robust to compression and resizing        │     │
-│  └────────────────────────────────────────────────────────┘     │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    %% Registration Flow
+    subgraph Registration Pipeline
+        R_Input[Original Image] --> pHash[1. Calculate pHash]
+        pHash --> C2PA_Embed[2. Inject C2PA Manifest]
+        C2PA_Embed --> Hydra_Embed[3. HydraWatermark Embed]
+        
+        subgraph Hydra Embed
+            H1[Neural TrustMark] --> H2[DCT Frequency] --> H3[Spatial LSB]
+        end
+        
+        Hydra_Embed --> R_Output[Final Watermarked Image]
+    end
+    
+    %% Verification Flow
+    subgraph Verification Pipeline
+        V_Input[Query Image] --> C2PA_Check{1. C2PA Valid?}
+        V_Input --> Hydra_Extract[2. Hydra Extract]
+        
+        subgraph Hydra Extract
+            E1[Neural] --> Vote[Majority Vote Engine]
+            E2[DCT] --> Vote
+            E3[Spatial] --> Vote
+        end
+        
+        V_Input --> pHash_Check[3. pHash Fallback]
+        
+        C2PA_Check -->|Match| Verdict[Final Verdict & Report]
+        Vote -->|Match| Verdict
+        pHash_Check -->|Match| Verdict
+    end
 ```
 
 ### Verification Hierarchy
 
 **Tier 1 (Authoritative)**: Cryptographic Signature + Registry  
 **Tier 2 (Robust)**: Perceptual Hash Matching  
-**Tier 3 (Supplementary)**: Watermark Extraction  
+**Tier 3 (Supplementary)**: HydraWatermark Extraction (Majority Vote)  
 
 ---
 
@@ -108,12 +108,15 @@ This system is fundamentally a **cryptographic provenance platform**, not a wate
 - **Tolerant Matching**: Hamming distance with configurable threshold
 - **Robust to Modifications**: Survives compression, resizing, minor edits
 
-### 🎨 Forensic Watermarking (Supplementary)
+### 🎨 Forensic Watermarking: HydraWatermark V2 (Supplementary)
 
-- **Deep Learning Embedding**: Adobe TrustMark Q-variant (PyTorch)
-- **Imperceptible**: Preserves high PSNR/SSIM visual quality
-- **Forensic Trace**: Robust extraction even after malicious cropping/resizing
-- **Honest Limitations**: May fail under JPEG compression, resizing, format conversion
+- **Triple-Redundant Pipeline**: Neural, DCT Frequency, and Spatial LSB layers
+- **Majority Vote Engine**: Consolidates layer outputs; verifies if ≥2 layers agree
+- **Targeted Resilience**: 
+  - *Neural*: Survives resizing, JPEG compression, minor cropping
+  - *DCT*: Survives color shifts, blurring, minor compression
+  - *Spatial*: Purely mathematical checksum (lossless exact match)
+- **Honest Limitations**: Complete destruction (heavy cropping + compression) falls back to pHash.
 
 ### 📊 Forensic Reporting
 

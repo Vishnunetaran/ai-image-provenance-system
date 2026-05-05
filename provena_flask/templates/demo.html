@@ -4,730 +4,555 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PROVENA-FLASK Demo</title>
+    <title>Provena — AI Image Provenance</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-card: #111827;
+            --bg-card-hover: #1a2235;
+            --bg-surface: #1e293b;
+            --accent: #6366f1;
+            --accent-light: #818cf8;
+            --accent-glow: rgba(99, 102, 241, 0.15);
+            --green: #10b981;
+            --green-glow: rgba(16, 185, 129, 0.15);
+            --red: #ef4444;
+            --red-glow: rgba(239, 68, 68, 0.15);
+            --yellow: #f59e0b;
+            --yellow-glow: rgba(245, 158, 11, 0.15);
+            --text: #e2e8f0;
+            --text-dim: #94a3b8;
+            --text-bright: #f8fafc;
+            --border: #1e293b;
+            --radius: 12px;
         }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text);
             min-height: 100vh;
-            padding: 20px;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
+        /* ── Header ──────────────────────────────── */
         .header {
             text-align: center;
-            color: white;
-            margin-bottom: 30px;
+            padding: 40px 20px 20px;
         }
-
         .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
+            font-size: 2.2em;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-light), #a78bfa, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.03em;
+        }
+        .header .subtitle {
+            color: var(--text-dim);
+            margin-top: 6px;
+            font-size: 0.95em;
+        }
+        .header .badge {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 4px 14px;
+            border-radius: 100px;
+            background: var(--accent-glow);
+            border: 1px solid rgba(99,102,241,0.3);
+            color: var(--accent-light);
+            font-size: 0.78em;
+            font-weight: 600;
+            letter-spacing: 0.04em;
         }
 
-        .header p {
-            font-size: 1.1em;
-            opacity: 0.9;
-        }
+        /* ── Container ───────────────────────────── */
+        .container { max-width: 960px; margin: 0 auto; padding: 0 20px 60px; }
 
-        .main-card {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        .upload-section {
-            border: 3px dashed #667eea;
-            border-radius: 10px;
-            padding: 40px;
-            text-align: center;
-            margin-bottom: 30px;
-            transition: all 0.3s;
-            cursor: pointer;
-        }
-
-        .upload-section:hover {
-            border-color: #764ba2;
-            background: #f8f9ff;
-        }
-
-        .upload-section.dragover {
-            border-color: #764ba2;
-            background: #f0f2ff;
-        }
-
-        .upload-icon {
-            font-size: 3em;
-            margin-bottom: 10px;
-        }
-
-        #fileInput {
-            display: none;
-        }
-
-        .preview-section {
-            display: none;
-            margin-bottom: 30px;
-        }
-
-        .preview-image {
-            max-width: 100%;
-            max-height: 400px;
-            border-radius: 10px;
+        /* ── Card ─────────────────────────────────── */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
             margin-bottom: 20px;
         }
 
-        .button-group {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            flex-wrap: wrap;
+        /* ── Upload Zone ──────────────────────────── */
+        .upload-zone {
+            border: 2px dashed #334155;
+            border-radius: var(--radius);
+            padding: 50px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+        .upload-zone .icon { font-size: 2.8em; margin-bottom: 12px; }
+        .upload-zone h2 { font-size: 1.15em; font-weight: 600; color: var(--text-bright); }
+        .upload-zone p { color: var(--text-dim); font-size: 0.88em; margin-top: 6px; }
+        #fileInput { display: none; }
+
+        /* ── Preview ──────────────────────────────── */
+        .preview-area { display: none; text-align: center; }
+        .preview-area img {
+            max-width: 100%;
+            max-height: 360px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
         }
 
+        /* ── Buttons ──────────────────────────────── */
+        .btn-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
         .btn {
-            padding: 12px 30px;
+            padding: 11px 28px;
             border: none;
             border-radius: 8px;
-            font-size: 1em;
+            font-family: inherit;
+            font-size: 0.92em;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-accent {
+            background: linear-gradient(135deg, var(--accent), #7c3aed);
+            color: #fff;
         }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        .btn-accent:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,0.35); }
+        .btn-green {
+            background: linear-gradient(135deg, var(--green), #059669);
+            color: #fff;
         }
-
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
+        .btn-green:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(16,185,129,0.35); }
+        .btn-ghost {
+            background: var(--bg-surface);
+            color: var(--text-dim);
+            border: 1px solid #334155;
         }
+        .btn-ghost:hover:not(:disabled) { background: #253044; color: var(--text); }
 
-        .btn-secondary:hover {
-            background: #5a6268;
+        /* ── Spinner ──────────────────────────────── */
+        .loading { display: none; text-align: center; padding: 30px; }
+        .spinner {
+            width: 36px; height: 36px;
+            border: 3px solid var(--bg-surface);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            margin: 0 auto 12px;
         }
+        .loading p { color: var(--text-dim); font-size: 0.9em; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-        }
-
-        .btn-success:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
-        }
-
-        .watermarked-preview-panel {
-            display: none;
-            background: #f0fff4;
-            border: 2px solid #28a745;
-            border-radius: 12px;
-            padding: 20px;
-            margin-top: 18px;
-            text-align: center;
-        }
-
-        .watermarked-preview-panel h4 {
-            color: #155724;
-            margin-bottom: 12px;
-            font-size: 1em;
-        }
-
-        .watermarked-preview-panel p.hint {
-            font-size: 0.85em;
-            color: #555;
-            margin-top: 10px;
-        }
-
-        .watermarked-thumb {
-            max-width: 100%;
-            max-height: 280px;
+        /* ── Results ──────────────────────────────── */
+        .results { display: none; }
+        .alert {
+            padding: 14px 18px;
             border-radius: 8px;
-            border: 1px solid #c3e6cb;
-            margin-bottom: 12px;
+            font-size: 0.9em;
+            font-weight: 500;
+            margin-bottom: 16px;
         }
+        .alert-ok { background: var(--green-glow); color: var(--green); border: 1px solid rgba(16,185,129,0.25); }
+        .alert-err { background: var(--red-glow); color: var(--red); border: 1px solid rgba(239,68,68,0.25); }
 
-        .results-section {
-            display: none;
-            margin-top: 30px;
-        }
-
-        .result-card {
-            background: #f8f9fa;
-            border-left: 4px solid #667eea;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-
-        .result-card h3 {
-            color: #667eea;
-            margin-bottom: 15px;
-        }
-
+        /* ── Status Badge ─────────────────────────── */
         .status-badge {
             display: inline-block;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: 600;
-            margin-bottom: 10px;
+            padding: 6px 18px;
+            border-radius: 100px;
+            font-weight: 700;
+            font-size: 0.85em;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
         }
+        .badge-verified { background: var(--green-glow); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
+        .badge-modified { background: var(--yellow-glow); color: var(--yellow); border: 1px solid rgba(245,158,11,0.3); }
+        .badge-tampered { background: var(--red-glow); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+        .badge-unregistered { background: rgba(148,163,184,0.1); color: var(--text-dim); border: 1px solid #334155; }
 
-        .status-verified {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .status-tampered {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .status-suspicious {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        .status-not-found {
-            background: #e2e3e5;
-            color: #383d41;
-        }
-
+        /* ── Info Grid ────────────────────────────── */
         .info-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
+            gap: 12px;
+            margin-top: 16px;
         }
-
-        .info-item {
-            background: white;
-            padding: 15px;
+        .info-cell {
+            background: var(--bg-surface);
+            padding: 14px;
             border-radius: 8px;
         }
+        .info-cell .label { font-size: 0.78em; color: var(--text-dim); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+        .info-cell .value { font-weight: 600; font-size: 0.92em; color: var(--text-bright); word-break: break-all; }
 
-        .info-item label {
-            font-size: 0.9em;
-            color: #6c757d;
-            display: block;
-            margin-bottom: 5px;
+        /* ── Hydra Layers Panel ────────────────────── */
+        .hydra-panel { margin-top: 18px; }
+        .hydra-panel h4 { font-size: 0.88em; color: var(--text-dim); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+        .layer-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            background: var(--bg-surface);
+            border-radius: 8px;
+            margin-bottom: 6px;
         }
-
-        .info-item value {
+        .layer-icon { font-size: 1.1em; }
+        .layer-name { flex: 1; font-weight: 500; font-size: 0.88em; }
+        .layer-conf {
+            font-size: 0.82em;
             font-weight: 600;
-            color: #333;
+            padding: 3px 10px;
+            border-radius: 100px;
+        }
+        .layer-pass { color: var(--green); background: var(--green-glow); }
+        .layer-fail { color: var(--red); background: var(--red-glow); }
+
+        /* ── Match Type Tag ────────────────────────── */
+        .match-tag {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 100px;
+            font-size: 0.78em;
+            font-weight: 600;
+            background: var(--accent-glow);
+            color: var(--accent-light);
+            border: 1px solid rgba(99,102,241,0.3);
+            margin-left: 10px;
         }
 
-        .json-toggle {
-            margin-top: 15px;
-        }
-
-        .json-content {
-            display: none;
-            background: #2d2d2d;
-            color: #f8f8f2;
-            padding: 20px;
-            border-radius: 8px;
-            overflow-x: auto;
-            margin-top: 10px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9em;
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 20px;
-        }
-
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        .alert {
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-
-        .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .alert-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .report-section {
+        /* ── Watermarked Preview ──────────────────── */
+        .wm-panel {
             display: none;
             margin-top: 20px;
-        }
-
-        .report-content {
-            background: white;
             padding: 20px;
+            background: rgba(16,185,129,0.05);
+            border: 1px solid rgba(16,185,129,0.2);
+            border-radius: var(--radius);
+            text-align: center;
+        }
+        .wm-panel h4 { color: var(--green); font-size: 0.9em; margin-bottom: 12px; }
+        .wm-panel img { max-width: 100%; max-height: 260px; border-radius: 8px; border: 1px solid rgba(16,185,129,0.2); margin-bottom: 14px; }
+        .wm-panel .hint { font-size: 0.82em; color: var(--text-dim); margin-top: 10px; }
+
+        /* ── JSON Toggle ──────────────────────────── */
+        .json-block {
+            display: none;
+            margin-top: 14px;
+            background: #0d1117;
+            color: #c9d1d9;
+            padding: 18px;
             border-radius: 8px;
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+            font-size: 0.82em;
+            overflow-x: auto;
             white-space: pre-wrap;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9em;
-            max-height: 500px;
+            max-height: 400px;
             overflow-y: auto;
+            border: 1px solid #21262d;
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🔐 PROVENA-FLASK</h1>
-            <p>AI Image Provenance Tracking System - Demo Interface</p>
-        </div>
+    <div class="header">
+        <h1>PROVENA</h1>
+        <p class="subtitle">AI Image Provenance & Authenticity System</p>
+        <span class="badge">HydraWatermark v2 — Neural + DCT + Spatial</span>
+    </div>
 
-        <div class="main-card">
-            <!-- Upload Section -->
-            <div class="upload-section" id="uploadSection">
-                <div class="upload-icon">📁</div>
+    <div class="container">
+        <div class="card">
+            <!-- Upload -->
+            <div class="upload-zone" id="uploadZone">
+                <div class="icon">🔬</div>
                 <h2>Upload an Image</h2>
-                <p>Drag and drop or click to select</p>
+                <p>Drag and drop or click to select — PNG, JPG, WebP</p>
                 <input type="file" id="fileInput" accept="image/*">
             </div>
 
-            <!-- Preview Section -->
-            <div class="preview-section" id="previewSection">
-                <img id="previewImage" class="preview-image" alt="Preview">
-                <div class="button-group">
-                    <button class="btn btn-primary" id="registerBtn">📝 Register Image</button>
-                    <button class="btn btn-primary" id="verifyBtn">✓ Verify Image</button>
-                    <button class="btn btn-secondary" id="clearBtn">✕ Clear</button>
+            <!-- Preview -->
+            <div class="preview-area" id="previewArea">
+                <img id="previewImg" alt="Preview">
+                <div class="btn-row">
+                    <button class="btn btn-accent" id="registerBtn">📝 Register</button>
+                    <button class="btn btn-accent" id="verifyBtn">🔍 Verify</button>
+                    <button class="btn btn-ghost" id="clearBtn">✕ Clear</button>
                 </div>
             </div>
 
             <!-- Loading -->
             <div class="loading" id="loading">
                 <div class="spinner"></div>
-                <p style="margin-top: 10px;">Processing...</p>
+                <p id="loadingText">Embedding 3 watermark layers...</p>
             </div>
+        </div>
 
-            <!-- Results Section -->
-            <div class="results-section" id="resultsSection">
-                <div id="alertContainer"></div>
+        <!-- Results -->
+        <div class="results" id="results">
+            <div id="alertBox"></div>
 
-                <div class="result-card" id="resultCard" style="display: none;">
-                    <h3 id="resultTitle">Results</h3>
-                    <div id="resultContent"></div>
+            <div class="card" id="resultCard" style="display:none;">
+                <h3 id="resultTitle" style="font-size:1.1em; font-weight:700; margin-bottom:16px;"></h3>
+                <div id="resultContent"></div>
 
-                    <div class="watermarked-preview-panel" id="watermarkedPanel">
-                        <h4>🖼️ Watermarked Image (with embedded provenance)</h4>
-                        <img id="watermarkedThumb" class="watermarked-thumb" alt="Watermarked Image Preview" />
-                        <br>
-                        <button class="btn btn-success" id="downloadWatermarkedBtn">⬇️ Download Watermarked
-                            Image</button>
-                        <p class="hint">💡 Download this image, then upload it again and click <strong>Verify</strong>
-                            to confirm it is registered.</p>
-                    </div>
-
-                    <div class="json-toggle">
-                        <button class="btn btn-secondary" id="jsonToggle">View JSON</button>
-                        <button class="btn btn-primary" id="reportBtn" style="display: none;">📊 View Forensic
-                            Report</button>
-                    </div>
-                    <div class="json-content" id="jsonContent"></div>
+                <!-- Watermarked download panel -->
+                <div class="wm-panel" id="wmPanel">
+                    <h4>🖼️ Watermarked Image (3 layers embedded)</h4>
+                    <img id="wmThumb" alt="Watermarked">
+                    <br>
+                    <button class="btn btn-green" id="downloadBtn">⬇️ Download Watermarked Image</button>
+                    <p class="hint">💡 Download this, then upload it again and click <strong>Verify</strong> to see HydraWatermark in action.</p>
                 </div>
 
-                <div class="report-section" id="reportSection">
-                    <h3>Forensic Report</h3>
-                    <div class="report-content" id="reportContent"></div>
+                <!-- Hydra layer breakdown (verify only) -->
+                <div class="hydra-panel" id="hydraPanel" style="display:none;">
+                    <h4>HydraWatermark Layer Breakdown</h4>
+                    <div id="hydraLayers"></div>
                 </div>
+
+                <!-- JSON toggle -->
+                <div style="margin-top:16px;">
+                    <button class="btn btn-ghost" id="jsonToggle">{ } View JSON</button>
+                </div>
+                <div class="json-block" id="jsonBlock"></div>
             </div>
         </div>
     </div>
 
     <script>
-        let currentImageData = null;
-        let currentImageId = null;
-        let currentResponse = null;
-        let currentWatermarkedB64 = null;
+        let imageData = null;
+        let imageId = null;
+        let response = null;
+        let wmB64 = null;
 
-        // Upload section elements
-        const uploadSection = document.getElementById('uploadSection');
-        const fileInput = document.getElementById('fileInput');
-        const previewSection = document.getElementById('previewSection');
-        const previewImage = document.getElementById('previewImage');
-        const loading = document.getElementById('loading');
-        const resultsSection = document.getElementById('resultsSection');
-        const resultCard = document.getElementById('resultCard');
-        const alertContainer = document.getElementById('alertContainer');
-        const jsonContent = document.getElementById('jsonContent');
-        const reportSection = document.getElementById('reportSection');
-        const reportContent = document.getElementById('reportContent');
+        const $ = id => document.getElementById(id);
 
-        // Buttons
-        const registerBtn = document.getElementById('registerBtn');
-        const verifyBtn = document.getElementById('verifyBtn');
-        const clearBtn = document.getElementById('clearBtn');
-        const jsonToggle = document.getElementById('jsonToggle');
-        const reportBtn = document.getElementById('reportBtn');
-
-        // Upload section click
-        uploadSection.addEventListener('click', () => fileInput.click());
-
-        // Drag and drop
-        uploadSection.addEventListener('dragover', (e) => {
+        // ── Upload ──────────────────────
+        $('uploadZone').addEventListener('click', () => $('fileInput').click());
+        $('uploadZone').addEventListener('dragover', e => { e.preventDefault(); $('uploadZone').classList.add('dragover'); });
+        $('uploadZone').addEventListener('dragleave', () => $('uploadZone').classList.remove('dragover'));
+        $('uploadZone').addEventListener('drop', e => {
             e.preventDefault();
-            uploadSection.classList.add('dragover');
+            $('uploadZone').classList.remove('dragover');
+            if (e.dataTransfer.files[0]?.type.startsWith('image/')) handleFile(e.dataTransfer.files[0]);
         });
+        $('fileInput').addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
 
-        uploadSection.addEventListener('dragleave', () => {
-            uploadSection.classList.remove('dragover');
-        });
-
-        uploadSection.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadSection.classList.remove('dragover');
-            const file = e.dataTransfer.files[0];
-            if (file && file.type.startsWith('image/')) {
-                handleFile(file);
-            }
-        });
-
-        // File input change
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                handleFile(file);
-            }
-        });
-
-        // Handle file upload
         function handleFile(file) {
             const reader = new FileReader();
-            reader.onload = (e) => {
-                currentImageData = e.target.result.split(',')[1]; // Base64 without prefix
-                previewImage.src = e.target.result;
-                uploadSection.style.display = 'none';
-                previewSection.style.display = 'block';
-                resultsSection.style.display = 'none';
+            reader.onload = e => {
+                imageData = e.target.result.split(',')[1];
+                $('previewImg').src = e.target.result;
+                $('uploadZone').style.display = 'none';
+                $('previewArea').style.display = 'block';
+                $('results').style.display = 'none';
             };
             reader.readAsDataURL(file);
         }
 
-        // Clear button
-        clearBtn.addEventListener('click', () => {
-            currentImageData = null;
-            currentImageId = null;
-            currentResponse = null;
-            currentWatermarkedB64 = null;
-            fileInput.value = '';
-            uploadSection.style.display = 'block';
-            previewSection.style.display = 'none';
-            resultsSection.style.display = 'none';
-            reportSection.style.display = 'none';
-            document.getElementById('watermarkedPanel').style.display = 'none';
+        // ── Clear ───────────────────────
+        $('clearBtn').addEventListener('click', () => {
+            imageData = imageId = response = wmB64 = null;
+            $('fileInput').value = '';
+            $('uploadZone').style.display = '';
+            $('previewArea').style.display = 'none';
+            $('results').style.display = 'none';
+            $('wmPanel').style.display = 'none';
+            $('hydraPanel').style.display = 'none';
         });
 
-        // Register button
-        registerBtn.addEventListener('click', async () => {
-            if (!currentImageData) return;
-
-            showLoading(true);
+        // ── Register ────────────────────
+        $('registerBtn').addEventListener('click', async () => {
+            if (!imageData) return;
+            setLoading(true, 'Embedding 3 watermark layers...');
             clearResults();
-
             try {
-                const response = await fetch('/api/v1/images/register', {
+                const res = await fetch('/api/v1/images/register', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        image: currentImageData,
-                        model_id: 'demo-model-v1',
-                        timestamp: new Date().toISOString()
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: imageData, model_id: 'demo-model-v1', timestamp: new Date().toISOString() })
                 });
-
-                const data = await response.json();
-                currentResponse = data;
-
-                if (response.ok) {
-                    currentImageId = data.image_id;
-                    currentWatermarkedB64 = data.watermarked_image || null;
-                    showSuccess('Image registered successfully!');
-                    displayRegistrationResults(data);
+                const data = await res.json();
+                response = data;
+                if (res.ok) {
+                    imageId = data.image_id;
+                    wmB64 = data.watermarked_image || null;
+                    showAlert('ok', 'Image registered with HydraWatermark (Neural + DCT + Spatial)');
+                    renderRegister(data);
                 } else {
-                    showError('Registration failed: ' + (data.error || 'Unknown error'));
+                    showAlert('err', 'Registration failed: ' + (data.error || data.message || 'Unknown'));
                 }
-            } catch (error) {
-                showError('Network error: ' + error.message);
-            } finally {
-                showLoading(false);
+            } catch (e) {
+                showAlert('err', 'Network error: ' + e.message);
             }
+            setLoading(false);
         });
 
-        // Download watermarked image button
-        document.getElementById('downloadWatermarkedBtn').addEventListener('click', () => {
-            if (!currentWatermarkedB64) {
-                alert('No watermarked image available.');
-                return;
-            }
-            const link = document.createElement('a');
-            link.href = 'data:image/png;base64,' + currentWatermarkedB64;
-            const safeId = (currentImageId || 'watermarked').replace(/[^a-z0-9\-]/gi, '_');
-            link.download = safeId + '_watermarked.png';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        });
-
-        // Verify button
-        verifyBtn.addEventListener('click', async () => {
-            if (!currentImageData) return;
-
-            showLoading(true);
+        // ── Verify ──────────────────────
+        $('verifyBtn').addEventListener('click', async () => {
+            if (!imageData) return;
+            setLoading(true, 'Extracting watermarks from 3 layers...');
             clearResults();
-
             try {
-                const response = await fetch('/api/v1/images/verify', {
+                const res = await fetch('/api/v1/images/verify', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        image: currentImageData
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: imageData })
                 });
-
-                const data = await response.json();
-                currentResponse = data;
-
-                if (response.ok) {
-                    currentImageId = data.image_id;
-                    showSuccess('Verification complete!');
-                    displayVerificationResults(data);
-                } else if (response.status === 404) {
-                    showError('Image not found in registry');
-                    displayVerificationResults(data);
+                const data = await res.json();
+                response = data;
+                imageId = data.image_id || null;
+                if (res.ok) {
+                    showAlert('ok', 'Verification complete');
+                } else if (res.status === 404) {
+                    showAlert('err', 'Image not found in provenance registry');
                 } else {
-                    showError('Verification failed: ' + (data.error || 'Unknown error'));
+                    showAlert('err', 'Verification error: ' + (data.error || 'Unknown'));
                 }
-            } catch (error) {
-                showError('Network error: ' + error.message);
-            } finally {
-                showLoading(false);
+                renderVerify(data);
+            } catch (e) {
+                showAlert('err', 'Network error: ' + e.message);
             }
+            setLoading(false);
         });
 
-        // JSON toggle
-        jsonToggle.addEventListener('click', () => {
-            if (jsonContent.style.display === 'none') {
-                jsonContent.style.display = 'block';
-                jsonContent.textContent = JSON.stringify(currentResponse, null, 2);
-                jsonToggle.textContent = 'Hide JSON';
+        // ── Download ────────────────────
+        $('downloadBtn').addEventListener('click', () => {
+            if (!wmB64) return;
+            const a = document.createElement('a');
+            a.href = 'data:image/png;base64,' + wmB64;
+            a.download = (imageId || 'provena') + '_watermarked.png';
+            a.click();
+        });
+
+        // ── JSON toggle ─────────────────
+        $('jsonToggle').addEventListener('click', () => {
+            const b = $('jsonBlock');
+            if (b.style.display === 'none' || !b.style.display) {
+                b.style.display = 'block';
+                b.textContent = JSON.stringify(response, null, 2);
+                $('jsonToggle').textContent = '{ } Hide JSON';
             } else {
-                jsonContent.style.display = 'none';
-                jsonToggle.textContent = 'View JSON';
+                b.style.display = 'none';
+                $('jsonToggle').textContent = '{ } View JSON';
             }
         });
 
-        // Report button
-        reportBtn.addEventListener('click', async () => {
-            if (!currentImageId) return;
-
-            showLoading(true);
-
-            try {
-                const response = await fetch(`/api/v1/report/${currentImageId}?format=text`);
-                const text = await response.text();
-
-                if (response.ok) {
-                    reportContent.textContent = text;
-                    reportSection.style.display = 'block';
-                } else {
-                    showError('Failed to load report');
-                }
-            } catch (error) {
-                showError('Network error: ' + error.message);
-            } finally {
-                showLoading(false);
-            }
-        });
-
-        // Helper functions
-        function showLoading(show) {
-            loading.style.display = show ? 'block' : 'none';
-            registerBtn.disabled = show;
-            verifyBtn.disabled = show;
-            const dlBtn = document.getElementById('downloadWatermarkedBtn');
-            if (dlBtn) dlBtn.disabled = show;
+        // ── Helpers ─────────────────────
+        function setLoading(show, text) {
+            $('loading').style.display = show ? 'block' : 'none';
+            if (text) $('loadingText').textContent = text;
+            $('registerBtn').disabled = show;
+            $('verifyBtn').disabled = show;
         }
-
         function clearResults() {
-            alertContainer.innerHTML = '';
-            resultCard.style.display = 'none';
-            reportSection.style.display = 'none';
-            jsonContent.style.display = 'none';
-            jsonToggle.textContent = 'View JSON';
-            const panel = document.getElementById('watermarkedPanel');
-            if (panel) panel.style.display = 'none';
+            $('alertBox').innerHTML = '';
+            $('resultCard').style.display = 'none';
+            $('jsonBlock').style.display = 'none';
+            $('wmPanel').style.display = 'none';
+            $('hydraPanel').style.display = 'none';
+            $('jsonToggle').textContent = '{ } View JSON';
+        }
+        function showAlert(type, msg) {
+            $('alertBox').innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+            $('results').style.display = 'block';
         }
 
-        function showSuccess(message) {
-            alertContainer.innerHTML = `<div class="alert alert-success">${message}</div>`;
-            resultsSection.style.display = 'block';
-        }
-
-        function showError(message) {
-            alertContainer.innerHTML = `<div class="alert alert-error">${message}</div>`;
-            resultsSection.style.display = 'block';
-        }
-
-        function displayRegistrationResults(data) {
-            resultCard.style.display = 'block';
-            document.getElementById('resultTitle').textContent = 'Registration Results';
-
-            const html = `
+        // ── Render Registration ─────────
+        function renderRegister(d) {
+            $('resultCard').style.display = 'block';
+            $('resultTitle').textContent = 'Registration Complete';
+            $('resultContent').innerHTML = `
                 <div class="info-grid">
-                    <div class="info-item">
-                        <label>Image ID</label>
-                        <value>${data.image_id}</value>
-                    </div>
-                    <div class="info-item">
-                        <label>Perceptual Hash</label>
-                        <value>${data.perceptual_hash.substring(0, 16)}...</value>
-                    </div>
-                    <div class="info-item">
-                        <label>Key ID</label>
-                        <value>${data.key_id}</value>
-                    </div>
-                    <div class="info-item">
-                        <label>Registered At</label>
-                        <value>${new Date(data.registered_at).toLocaleString()}</value>
-                    </div>
-                </div>
-            `;
-
-            document.getElementById('resultContent').innerHTML = html;
-            reportBtn.style.display = 'inline-block';
-
-            // Show watermarked image download panel
-            if (currentWatermarkedB64) {
-                const panel = document.getElementById('watermarkedPanel');
-                const thumb = document.getElementById('watermarkedThumb');
-                thumb.src = 'data:image/png;base64,' + currentWatermarkedB64;
-                panel.style.display = 'block';
+                    <div class="info-cell"><div class="label">Record ID</div><div class="value">${d.image_id || '—'}</div></div>
+                    <div class="info-cell"><div class="label">pHash</div><div class="value">${(d.perceptual_hash || '—').substring(0,16)}…</div></div>
+                    <div class="info-cell"><div class="label">Watermark Layers</div><div class="value">3 (Neural + DCT + Spatial)</div></div>
+                    <div class="info-cell"><div class="label">Registered</div><div class="value">${new Date(d.registered_at || Date.now()).toLocaleString()}</div></div>
+                </div>`;
+            if (wmB64) {
+                $('wmThumb').src = 'data:image/png;base64,' + wmB64;
+                $('wmPanel').style.display = 'block';
             }
         }
 
-        function displayVerificationResults(data) {
-            resultCard.style.display = 'block';
-            document.getElementById('resultTitle').textContent = 'Verification Results';
+        // ── Render Verification ─────────
+        function renderVerify(d) {
+            $('resultCard').style.display = 'block';
+            $('resultTitle').innerHTML = 'Verification Result';
 
-            const statusKey = data.status.toLowerCase();
-            const statusClass = {
-                'verified': 'status-verified',
-                'verified_modified': 'status-suspicious',
-                'tampered': 'status-tampered',
-                'suspicious': 'status-suspicious',
-                'unregistered': 'status-not-found',
-                'not_found': 'status-not-found'
-            }[statusKey] || 'status-not-found';
+            const s = (d.status || 'not_found').toLowerCase();
+            let badgeClass, badgeText;
+            if (s === 'verified') { badgeClass = 'badge-verified'; badgeText = '✓ VERIFIED'; }
+            else if (s === 'verified_modified') { badgeClass = 'badge-modified'; badgeText = '⚠ MODIFIED'; }
+            else if (s === 'tampered') { badgeClass = 'badge-tampered'; badgeText = '✕ TAMPERED'; }
+            else { badgeClass = 'badge-unregistered'; badgeText = '— UNREGISTERED'; }
 
-            let statusText = data.status.toUpperCase().replace('_', ' ');
-            if (data.status === 'verified_modified') {
-                statusText = 'PARTIAL: WATERMARK MISSING';
+            let matchTag = '';
+            if (d.match_type) {
+                const labels = { c2pa: 'C2PA Manifest', hydra_neural: 'HydraWatermark', phash: 'pHash Fallback', wide_phash: 'Wide pHash' };
+                matchTag = `<span class="match-tag">${labels[d.match_type] || d.match_type}</span>`;
             }
 
-            let html = `
-                <div class="status-badge ${statusClass}">${statusText}</div>
-            `;
+            let html = `<span class="status-badge ${badgeClass}">${badgeText}</span>${matchTag}`;
 
-            if (data.verification) {
+            if (d.verification) {
+                const v = d.verification;
                 html += `
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <label>Watermark Extracted</label>
-                            <value>${data.verification.watermark_extracted ? '✓ Yes' : '✗ No'}</value>
-                        </div>
-                        <div class="info-item">
-                            <label>Signature Valid</label>
-                            <value>${data.verification.signature_valid ? '✓ Yes' : '✗ No'}</value>
-                        </div>
-                        <div class="info-item">
-                            <label>Perceptual Match</label>
-                            <value>${data.verification.perceptual_match ? '✓ Yes' : '✗ No'}</value>
-                        </div>
-                    </div>
-                `;
+                <div class="info-grid">
+                    <div class="info-cell"><div class="label">Watermark Extracted</div><div class="value">${v.watermark_extracted ? '✓ Yes' : '✗ No'}</div></div>
+                    <div class="info-cell"><div class="label">C2PA Signature</div><div class="value">${v.signature_valid ? '✓ Valid' : '✗ Not Found'}</div></div>
+                    <div class="info-cell"><div class="label">Perceptual Match</div><div class="value">${v.perceptual_match ? '✓ Yes' : '✗ No'}</div></div>
+                </div>`;
             }
 
-            if (data.provenance) {
+            if (d.provenance) {
+                const p = d.provenance;
                 html += `
-                    <h4 style="margin-top: 20px;">Provenance Information</h4>
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <label>Model ID</label>
-                            <value>${data.provenance.model_id}</value>
-                        </div>
-                        <div class="info-item">
-                            <label>Timestamp</label>
-                            <value>${new Date(data.provenance.timestamp).toLocaleString()}</value>
-                        </div>
-                        <div class="info-item">
-                            <label>Key ID</label>
-                            <value>${data.provenance.key_id}</value>
-                        </div>
-                    </div>
-                `;
+                <h4 style="margin-top:20px;font-size:0.88em;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;">Provenance Record</h4>
+                <div class="info-grid">
+                    <div class="info-cell"><div class="label">Model</div><div class="value">${p.model_id || '—'}</div></div>
+                    <div class="info-cell"><div class="label">Registered</div><div class="value">${p.timestamp ? new Date(p.timestamp).toLocaleString() : '—'}</div></div>
+                    <div class="info-cell"><div class="label">Key ID</div><div class="value">${(p.key_id || '—').substring(0,16)}…</div></div>
+                </div>`;
             }
 
-            document.getElementById('resultContent').innerHTML = html;
+            $('resultContent').innerHTML = html;
 
-            if (data.image_id) {
-                reportBtn.style.display = 'inline-block';
+            // Hydra layer breakdown
+            if (d.verification?.hydra_layers && Object.keys(d.verification.hydra_layers).length > 0) {
+                const layers = d.verification.hydra_layers;
+                let layerHtml = '';
+                const icons = { neural_trustmark: '🧠', dct_frequency: '📊', spatial_lsb: '🔲' };
+                const names = { neural_trustmark: 'Neural (TrustMark)', dct_frequency: 'DCT (Frequency)', spatial_lsb: 'Spatial (LSB+ECC)' };
+
+                for (const [key, info] of Object.entries(layers)) {
+                    const ok = info.voted;
+                    const conf = (info.confidence * 100).toFixed(1);
+                    layerHtml += `
+                    <div class="layer-row">
+                        <span class="layer-icon">${icons[key] || '◉'}</span>
+                        <span class="layer-name">${names[key] || key}</span>
+                        <span class="layer-conf ${ok ? 'layer-pass' : 'layer-fail'}">${ok ? '✓' : '✗'} ${conf}%</span>
+                    </div>`;
+                }
+
+                $('hydraLayers').innerHTML = layerHtml;
+                $('hydraPanel').style.display = 'block';
             }
         }
     </script>
 </body>
-
 </html>
