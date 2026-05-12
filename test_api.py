@@ -37,7 +37,7 @@ def image_to_base64(image: np.ndarray) -> str:
 def run_tests():
     """Run API endpoint tests."""
     print("\n" + "="*70)
-    print("  PROVENA-FLASK API INTEGRATION TEST SUITE")
+    print("  PROVENA API INTEGRATION TEST SUITE")
     print("  Phase 5: Flask API Endpoints")
     print("="*70)
     

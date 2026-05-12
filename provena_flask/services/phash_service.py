@@ -1,5 +1,5 @@
 """
-Perceptual Hashing Service for Provena-FLASK.
+Perceptual Hashing Service for Provena.
 
 Implements perceptual hashing for tolerant image matching.
 Uses pHash (perceptual hash) and dHash (difference hash) algorithms.

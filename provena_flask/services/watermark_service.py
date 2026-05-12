@@ -1,5 +1,5 @@
 """
-Watermark Service Module for Provena-FLASK.
+Watermark Service Module for Provena.
 
 UPGRADED IMPLEMENTATION (v2.0):
 - Hybrid DWT+DCT embedding for improved robustness

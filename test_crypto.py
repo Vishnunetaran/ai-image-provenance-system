@@ -300,7 +300,7 @@ def test_canonical_json_signing():
 def run_all_tests():
     """Run all cryptographic tests."""
     print("\n" + "="*70)
-    print("  PROVENA-FLASK CRYPTOGRAPHIC MODULE TEST SUITE")
+    print("  PROVENA CRYPTOGRAPHIC MODULE TEST SUITE")
     print("  Phase 1: Ed25519 Digital Signatures & Key Storage")
     print("="*70)
     

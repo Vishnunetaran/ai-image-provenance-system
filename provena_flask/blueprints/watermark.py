@@ -1,5 +1,5 @@
 """
-Watermark blueprint for Provena-FLASK.
+Watermark blueprint for Provena.
 
 Handles watermark embedding and extraction operations.
 """

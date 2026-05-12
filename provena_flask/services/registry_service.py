@@ -1,5 +1,5 @@
 """
-Registry Service Layer for Provena-FLASK.
+Registry Service Layer for Provena.
 
 Provides high-level interface for provenance registry operations.
 Enforces append-only semantics and integrates with cryptographic services.

@@ -1,4 +1,4 @@
-# PROVENA-FLASK: Technical Documentation
+# PROVENA: Technical Documentation
 
 **Status**: Research Implementation
 
@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-PROVENA-FLASK is a provenance tracking system for AI-generated images. It provides **cryptographic proof of metadata integrity** through Ed25519 digital signatures, supplemented by perceptual hashing and a hybrid DWT+DCT invisible watermark (v2.0).
+PROVENA is a provenance tracking system for AI-generated images. It provides **cryptographic proof of metadata integrity** through Ed25519 digital signatures, supplemented by perceptual hashing and a hybrid DWT+DCT invisible watermark (v2.0).
 
 **What This System Proves:**
 - An image was registered with specific metadata (model, timestamp)
@@ -546,7 +546,7 @@ This system explicitly does NOT attempt to:
 
 ## Conclusion
 
-PROVENA-FLASK successfully demonstrates **cryptographic provenance tracking** for AI-generated images. The system provides robust metadata integrity through Ed25519 signatures, supplemented by perceptual hashing.
+PROVENA successfully demonstrates **cryptographic provenance tracking** for AI-generated images. The system provides robust metadata integrity through Ed25519 signatures, supplemented by perceptual hashing.
 
 **Key Strengths**:
 - Cryptographic signatures are robust and reliable

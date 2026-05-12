@@ -16,7 +16,7 @@ endpoints = [
 ]
 
 print("=" * 70)
-print("  Provena-FLASK Phase 0 Verification")
+print("  Provena Phase 0 Verification")
 print("=" * 70)
 
 all_passed = True

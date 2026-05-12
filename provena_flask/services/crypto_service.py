@@ -1,5 +1,5 @@
 """
-Cryptographic Service Module for Provena-FLASK.
+Cryptographic Service Module for Provena.
 
 Provides Ed25519 digital signature operations for provenance binding.
 This module handles:

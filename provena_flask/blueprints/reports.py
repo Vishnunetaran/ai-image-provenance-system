@@ -1,5 +1,5 @@
 """
-Forensic Reports blueprint for Provena-FLASK.
+Forensic Reports blueprint for Provena.
 
 Generates comprehensive forensic reports for provenance verification.
 """

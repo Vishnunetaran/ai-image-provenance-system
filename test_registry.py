@@ -17,7 +17,7 @@ from provena_flask.services.crypto_service import CryptoService
 def run_tests():
     """Run all registry tests in a single database instance."""
     print("\n" + "="*70)
-    print("  PROVENA-FLASK REGISTRY TEST SUITE")
+    print("  PROVENA REGISTRY TEST SUITE")
     print("  Phase 2: Append-Only Provenance Registry")
     print("="*70)
     

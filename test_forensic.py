@@ -20,7 +20,7 @@ from provena_flask.services.crypto_service import CryptoService
 def run_tests():
     """Run forensic reporting tests."""
     print("\n" + "="*70)
-    print("  PROVENA-FLASK FORENSIC REPORTING TEST SUITE")
+    print("  PROVENA FORENSIC REPORTING TEST SUITE")
     print("  Phase 6: Forensic Report Generation")
     print("="*70)
     

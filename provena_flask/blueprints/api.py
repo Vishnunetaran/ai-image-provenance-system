@@ -1,5 +1,5 @@
 """
-Main API blueprint for Provena-FLASK.
+Main API blueprint for Provena.
 
 Handles core image registration and verification endpoints.
 Integrates: crypto, watermark, registry, and perceptual hashing services.

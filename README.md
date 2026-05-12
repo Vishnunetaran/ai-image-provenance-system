@@ -1,4 +1,4 @@
-# PROVENA-FLASK
+# PROVENA
 
 **AI Image Provenance & Forensic Verification System**
 
@@ -8,7 +8,7 @@ A cryptographic provenance tracking and forensic verification system for AI-gene
 
 ## Overview
 
-PROVENA-FLASK is a research implementation of a comprehensive AI image provenance system that establishes **cryptographic traceability** for AI-generated images. The system uses Ed25519 digital signatures and an append-only registry as the authoritative proof of origin, with invisible watermarking providing supplementary forensic evidence when extractable.
+PROVENA is a research implementation of a comprehensive AI image provenance system that establishes **cryptographic traceability** for AI-generated images. The system uses Ed25519 digital signatures and an append-only registry as the authoritative proof of origin, with invisible watermarking providing supplementary forensic evidence when extractable.
 
 ### Core Principle
 
@@ -414,4 +414,4 @@ Inspired by:
 
 ---
 
-**PROVENA-FLASK**: Cryptographic provenance for AI images, with forensic watermarking as supplementary evidence.
+**PROVENA**: Cryptographic provenance for AI images, with forensic watermarking as supplementary evidence.

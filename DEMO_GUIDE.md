@@ -1,8 +1,8 @@
-# PROVENA-FLASK Demo Guide
+# PROVENA Demo Guide
 
 **Demonstrating Cryptographic Provenance & Forensic Verification**
 
-This guide explains how to demonstrate the PROVENA-FLASK system in realistic scenarios that showcase both the strengths and honest limitations of cryptographic provenance tracking.
+This guide explains how to demonstrate the PROVENA system in realistic scenarios that showcase both the strengths and honest limitations of cryptographic provenance tracking.
 
 ---
 
@@ -323,7 +323,7 @@ Two verdict vocabularies exist because two different endpoints answer two differ
 ## Presentation Outline
 
 ### 1. Introduction (2 min)
-- What is PROVENA-FLASK?
+- What is PROVENA?
 - Cryptographic provenance, not watermarking
 - Industry alignment (C2PA, Adobe)
 
@@ -359,6 +359,6 @@ Two verdict vocabularies exist because two different endpoints answer two differ
 
 ## Conclusion
 
-PROVENA-FLASK demonstrates **cryptographic provenance tracking** with honest limitations. The system is suitable for research and education, showcasing how cryptographic signatures provide authoritative proof of origin, with watermarking as supplementary forensic evidence.
+PROVENA demonstrates **cryptographic provenance tracking** with honest limitations. The system is suitable for research and education, showcasing how cryptographic signatures provide authoritative proof of origin, with watermarking as supplementary forensic evidence.
 
 **Key Takeaway**: Cryptographic provenance is robust and reliable. Watermark extraction is best-effort and may fail under heavy transformation. This is expected, documented, and does not invalidate the provenance proof.

@@ -1,5 +1,5 @@
 """
-Application entry point for Provena-FLASK.
+Application entry point for Provena.
 
 Run this file to start the development server.
 """
@@ -19,9 +19,9 @@ if __name__ == '__main__':
     
     print(f"""
     ╔═══════════════════════════════════════════════════════╗
-    ║   Provena-FLASK: AI Image Provenance Service         ║
-    ║   Environment: {config_name:<38} ║
-    ║   Debug Mode: {str(debug_mode):<39} ║
+    ║   PROVENA · Cryptographic provenance for AI images    ║
+    ║   Environment: {config_name:<39}║
+    ║   Debug Mode:  {str(debug_mode):<39}║
     ╚═══════════════════════════════════════════════════════╝
     """)
     

@@ -1,5 +1,5 @@
 """
-Verification blueprint for Provena-FLASK.
+Verification blueprint for Provena.
 
 Handles image verification and integrity checking.
 """

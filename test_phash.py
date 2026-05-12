@@ -49,7 +49,7 @@ def create_test_image(size=(256, 256), pattern='gradient') -> np.ndarray:
 def run_tests():
     """Run all perceptual hashing tests."""
     print("\n" + "="*70)
-    print("  PROVENA-FLASK PERCEPTUAL HASHING TEST SUITE")
+    print("  PROVENA PERCEPTUAL HASHING TEST SUITE")
     print("  Phase 4: pHash and dHash Implementation")
     print("="*70)
     

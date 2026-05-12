@@ -11,7 +11,7 @@ from provena_flask.services.crypto_service import CryptoService
 import json
 
 print("="*70)
-print("  Provena-FLASK Cryptographic Module Demo")
+print("  Provena Cryptographic Module Demo")
 print("="*70)
 
 # 1. Generate keys

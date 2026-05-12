@@ -1,5 +1,5 @@
 """
-Provenance Data Model for Provena-FLASK.
+Provenance Data Model for Provena.
 
 Defines the SQLite schema for the append-only provenance registry.
 This model stores cryptographically signed metadata for AI-generated images.

@@ -35,7 +35,7 @@ def create_test_image(size=(512, 512)) -> np.ndarray:
 def run_tests():
     """Run all watermarking tests."""
     print("\n" + "="*70)
-    print("  PROVENA-FLASK WATERMARKING ENGINE TEST SUITE")
+    print("  PROVENA WATERMARKING ENGINE TEST SUITE")
     print("  Phase 3: Frequency-Domain Watermarking (DWT)")
     print("="*70)
     

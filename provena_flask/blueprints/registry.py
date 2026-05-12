@@ -1,5 +1,5 @@
 """
-Registry blueprint for Provena-FLASK.
+Registry blueprint for Provena.
 
 Handles provenance registry operations.
 """

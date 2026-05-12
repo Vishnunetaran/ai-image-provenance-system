@@ -1,5 +1,5 @@
 """
-Configuration module for Provena-FLASK.
+Configuration module for Provena.
 
 Supports multiple environments: development, production, testing.
 """

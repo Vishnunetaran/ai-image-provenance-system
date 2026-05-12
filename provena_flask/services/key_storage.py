@@ -1,5 +1,5 @@
 """
-Secure Key Storage Service for Provena-FLASK.
+Secure Key Storage Service for Provena.
 
 Manages cryptographic key persistence with security best practices:
 - Private keys stored in restricted directory

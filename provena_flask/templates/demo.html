@@ -3,255 +3,556 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PROVENA-FLASK Demo</title>
+    <title>PROVENA — Cryptographic provenance for AI images</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg: #0a0a0a;
+            --bg-elev: #111111;
+            --bg-card: #141414;
+            --accent: #ff2d2d;
+            --accent-hover: #ff4747;
+            --accent-dim: rgba(255, 45, 45, 0.12);
+            --text: #fafafa;
+            --text-muted: #8a8a8a;
+            --text-faint: #4a4a4a;
+            --border: #1f1f1f;
+            --border-strong: #2a2a2a;
+            --success: #4ade80;
+            --warning: #fbbf24;
+            --danger: var(--accent);
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
             min-height: 100vh;
-            padding: 20px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
-        .container {
-            max-width: 1200px;
+        .mono {
+            font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+        }
+
+        /* ============ HEADER ============ */
+        .site-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(10, 10, 10, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-inner {
+            max-width: 1280px;
             margin: 0 auto;
+            padding: 18px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
-        .header {
-            text-align: center;
+        .wordmark {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+            font-size: 1.05rem;
+            letter-spacing: 0.02em;
+            color: var(--text);
+            text-decoration: none;
+        }
+
+        .wordmark-dot {
+            width: 10px;
+            height: 10px;
+            background: var(--accent);
+            border-radius: 50%;
+            box-shadow: 0 0 16px var(--accent);
+        }
+
+        .header-nav {
+            display: flex;
+            align-items: center;
+            gap: 28px;
+        }
+
+        .header-nav a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.15s ease;
+        }
+
+        .header-nav a:hover {
+            color: var(--text);
+        }
+
+        .header-cta {
+            background: var(--accent);
             color: white;
-            margin-bottom: 30px;
-        }
-
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-
-        .header p {
-            font-size: 1.1em;
-            opacity: 0.9;
-        }
-
-        .main-card {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        .upload-section {
-            border: 3px dashed #667eea;
-            border-radius: 10px;
-            padding: 40px;
-            text-align: center;
-            margin-bottom: 30px;
-            transition: all 0.3s;
+            padding: 9px 18px;
+            font-weight: 600;
+            font-size: 0.88rem;
+            text-decoration: none;
+            border: none;
             cursor: pointer;
+            transition: background 0.15s ease, transform 0.15s ease;
+            font-family: inherit;
         }
 
-        .upload-section:hover {
-            border-color: #764ba2;
-            background: #f8f9ff;
+        .header-cta:hover {
+            background: var(--accent-hover);
         }
 
-        .upload-section.dragover {
-            border-color: #764ba2;
-            background: #f0f2ff;
+        /* ============ HERO ============ */
+        .hero {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 96px 32px 64px;
+        }
+
+        .hero-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 7px 14px;
+            border: 1px solid var(--border-strong);
+            border-radius: 999px;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-bottom: 32px;
+            letter-spacing: 0.02em;
+        }
+
+        .hero-eyebrow::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: var(--accent);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--accent);
+        }
+
+        .hero-title {
+            font-size: clamp(2.8rem, 7vw, 5.8rem);
+            font-weight: 900;
+            line-height: 0.98;
+            letter-spacing: -0.035em;
+            margin-bottom: 28px;
+            max-width: 14ch;
+        }
+
+        .hero-title .accent {
+            color: var(--accent);
+        }
+
+        .hero-sub {
+            font-size: clamp(1.05rem, 1.6vw, 1.3rem);
+            color: var(--text-muted);
+            max-width: 60ch;
+            margin-bottom: 44px;
+            line-height: 1.55;
+        }
+
+        .hero-cta-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary-lg {
+            background: var(--accent);
+            color: white;
+            padding: 16px 32px;
+            font-weight: 700;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.15s ease, transform 0.15s ease;
+            font-family: inherit;
+        }
+
+        .btn-primary-lg:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary-lg .arrow {
+            transition: transform 0.2s ease;
+        }
+
+        .btn-primary-lg:hover .arrow {
+            transform: translateX(4px);
+        }
+
+        .btn-ghost-lg {
+            background: transparent;
+            color: var(--text);
+            padding: 16px 32px;
+            font-weight: 600;
+            font-size: 1rem;
+            border: 1px solid var(--border-strong);
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: border-color 0.15s ease, background 0.15s ease;
+            font-family: inherit;
+        }
+
+        .btn-ghost-lg:hover {
+            border-color: var(--accent);
+            background: var(--accent-dim);
+        }
+
+        /* ============ FEATURES STRIP ============ */
+        .features {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 64px 32px;
+            border-top: 1px solid var(--border);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 32px;
+        }
+
+        .feature {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .feature-num {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        .feature-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .feature-desc {
+            color: var(--text-muted);
+            font-size: 0.92rem;
+            line-height: 1.55;
+        }
+
+        /* ============ DIVIDER ============ */
+        .section-divider {
+            max-width: 1280px;
+            margin: 64px auto 0;
+            padding: 0 32px;
+        }
+
+        .section-divider-inner {
+            border-top: 1px solid var(--border);
+            padding-top: 48px;
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .section-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            color: var(--accent);
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .section-headline {
+            font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            line-height: 1.05;
+        }
+
+        /* ============ APP SECTION ============ */
+        .app-section {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 48px 32px 96px;
+        }
+
+        .app-card {
+            background: var(--bg-elev);
+            border: 1px solid var(--border);
+            padding: 40px;
+        }
+
+        @media (max-width: 640px) {
+            .app-card { padding: 24px; }
+            .hero { padding: 64px 24px 48px; }
+            .header-inner { padding: 16px 20px; }
+            .header-nav { gap: 16px; }
+            .header-nav a:not(.header-cta) { display: none; }
+        }
+
+        /* Upload */
+        .upload-zone {
+            border: 2px dashed var(--border-strong);
+            padding: 56px 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: var(--accent);
+            background: var(--accent-dim);
         }
 
         .upload-icon {
-            font-size: 3em;
-            margin-bottom: 10px;
+            font-size: 2.4rem;
+            margin-bottom: 16px;
+            opacity: 0.7;
         }
 
-        #fileInput {
-            display: none;
+        .upload-zone h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 6px;
         }
 
+        .upload-zone p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        #fileInput { display: none; }
+
+        /* Preview */
         .preview-section {
             display: none;
-            margin-bottom: 30px;
         }
 
         .preview-image {
             max-width: 100%;
-            max-height: 400px;
-            border-radius: 10px;
-            margin-bottom: 20px;
+            max-height: 420px;
+            display: block;
+            margin: 0 auto 24px;
+            border: 1px solid var(--border);
         }
 
-        .button-group {
+        .button-row {
             display: flex;
-            gap: 15px;
+            gap: 12px;
             justify-content: center;
             flex-wrap: wrap;
         }
 
         .btn {
-            padding: 12px 30px;
+            padding: 12px 24px;
             border: none;
-            border-radius: 8px;
-            font-size: 1em;
+            font-size: 0.92rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: background 0.15s ease, border-color 0.15s ease;
+            font-family: inherit;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--accent);
             color: white;
         }
 
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
+        .btn-primary:hover { background: var(--accent-hover); }
 
         .btn-secondary {
-            background: #6c757d;
-            color: white;
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border-strong);
         }
 
-        .btn-secondary:hover {
-            background: #5a6268;
-        }
+        .btn-secondary:hover { border-color: var(--text); }
 
         .btn:disabled {
-            opacity: 0.5;
+            opacity: 0.4;
             cursor: not-allowed;
         }
 
-        .results-section {
+        /* Loading */
+        .loading {
             display: none;
-            margin-top: 30px;
+            text-align: center;
+            padding: 32px;
         }
 
+        .spinner {
+            width: 36px;
+            height: 36px;
+            border: 2px solid var(--border-strong);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading p { color: var(--text-muted); font-size: 0.9rem; }
+
+        /* Results */
+        .results-section {
+            display: none;
+            margin-top: 32px;
+        }
+
+        .alert {
+            padding: 14px 18px;
+            margin-bottom: 16px;
+            border-left: 3px solid;
+            font-size: 0.92rem;
+            background: var(--bg-card);
+        }
+
+        .alert-success { border-color: var(--success); }
+        .alert-error { border-color: var(--accent); }
+
         .result-card {
-            background: #f8f9fa;
-            border-left: 4px solid #667eea;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 15px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 24px;
         }
 
         .result-card h3 {
-            color: #667eea;
-            margin-bottom: 15px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: -0.01em;
+        }
+
+        .result-card h4 {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-top: 24px;
+            margin-bottom: 12px;
         }
 
         .status-badge {
             display: inline-block;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: 600;
-            margin-bottom: 10px;
+            padding: 6px 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-bottom: 16px;
         }
 
         .status-verified {
-            background: #d4edda;
-            color: #155724;
+            background: rgba(74, 222, 128, 0.12);
+            color: var(--success);
+            border: 1px solid rgba(74, 222, 128, 0.3);
         }
 
         .status-tampered {
-            background: #f8d7da;
-            color: #721c24;
+            background: var(--accent-dim);
+            color: var(--accent);
+            border: 1px solid rgba(255, 45, 45, 0.3);
         }
 
         .status-suspicious {
-            background: #fff3cd;
-            color: #856404;
+            background: rgba(251, 191, 36, 0.12);
+            color: var(--warning);
+            border: 1px solid rgba(251, 191, 36, 0.3);
         }
 
         .status-not-found {
-            background: #e2e3e5;
-            color: #383d41;
+            background: rgba(138, 138, 138, 0.1);
+            color: var(--text-muted);
+            border: 1px solid var(--border-strong);
         }
 
         .info-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+            margin-top: 12px;
         }
 
         .info-item {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
+            background: var(--bg-elev);
+            padding: 14px 16px;
         }
 
         .info-item label {
-            font-size: 0.9em;
-            color: #6c757d;
             display: block;
-            margin-bottom: 5px;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 6px;
+            font-weight: 600;
         }
 
         .info-item value {
-            font-weight: 600;
-            color: #333;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.88rem;
+            color: var(--text);
+            font-weight: 500;
+            word-break: break-all;
         }
 
-        .json-toggle {
-            margin-top: 15px;
+        .action-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
         }
 
         .json-content {
             display: none;
-            background: #2d2d2d;
-            color: #f8f8f2;
-            padding: 20px;
-            border-radius: 8px;
+            background: #050505;
+            border: 1px solid var(--border);
+            color: #d4d4d4;
+            padding: 18px;
             overflow-x: auto;
-            margin-top: 10px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9em;
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 20px;
-        }
-
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .alert {
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-
-        .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .alert-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            margin-top: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            line-height: 1.55;
+            max-height: 400px;
+            overflow-y: auto;
         }
 
         .report-section {
@@ -260,78 +561,172 @@
         }
 
         .report-content {
-            background: white;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
             padding: 20px;
-            border-radius: 8px;
             white-space: pre-wrap;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9em;
-            max-height: 500px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            line-height: 1.6;
+            max-height: 520px;
             overflow-y: auto;
+            color: var(--text);
+        }
+
+        /* ============ FOOTER ============ */
+        .site-footer {
+            border-top: 1px solid var(--border);
+            padding: 32px;
+            text-align: center;
+            color: var(--text-faint);
+            font-size: 0.85rem;
+        }
+
+        .site-footer .accent { color: var(--accent); }
+
+        /* Scroll reveal */
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🔐 PROVENA-FLASK</h1>
-            <p>AI Image Provenance Tracking System - Demo Interface</p>
-        </div>
 
-        <div class="main-card">
-            <!-- Upload Section -->
-            <div class="upload-section" id="uploadSection">
-                <div class="upload-icon">📁</div>
-                <h2>Upload an Image</h2>
-                <p>Drag and drop or click to select</p>
+    <!-- ============ HEADER ============ -->
+    <header class="site-header">
+        <div class="header-inner">
+            <a href="#" class="wordmark">
+                <span class="wordmark-dot"></span>
+                <span>PROVENA</span>
+            </a>
+            <nav class="header-nav">
+                <a href="#features">Features</a>
+                <a href="#app">App</a>
+                <a href="#app" class="header-cta">Try Now</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- ============ HOME / HERO ============ -->
+    <section class="hero" id="home">
+        <div class="hero-eyebrow mono">CRYPTOGRAPHIC PROVENANCE · RESEARCH BUILD</div>
+        <h1 class="hero-title">
+            Proof of origin for <span class="accent">AI&nbsp;images.</span>
+        </h1>
+        <p class="hero-sub">
+            Provena establishes verifiable provenance for AI-generated images using Ed25519 digital signatures and an append-only registry, supplemented by perceptual hashing and a hybrid DWT+DCT watermark.
+        </p>
+        <div class="hero-cta-row">
+            <a href="#app" class="btn-primary-lg" id="tryNowBtn">
+                Try Now
+                <span class="arrow">→</span>
+            </a>
+            <a href="#features" class="btn-ghost-lg">How it works</a>
+        </div>
+    </section>
+
+    <!-- ============ FEATURES ============ -->
+    <section class="features reveal" id="features">
+        <div class="feature">
+            <span class="feature-num">01 / SIGNATURE</span>
+            <h3 class="feature-title">Ed25519 cryptography</h3>
+            <p class="feature-desc">Industry-standard elliptic-curve signatures bind metadata to every image. Tampering is detected instantly.</p>
+        </div>
+        <div class="feature">
+            <span class="feature-num">02 / REGISTRY</span>
+            <h3 class="feature-title">Append-only ledger</h3>
+            <p class="feature-desc">Provenance records live in a tamper-evident SQLite ledger with a complete audit trail.</p>
+        </div>
+        <div class="feature">
+            <span class="feature-num">03 / pHASH</span>
+            <h3 class="feature-title">Perceptual matching</h3>
+            <p class="feature-desc">Hamming-distance pHash matching survives compression, resizing, and minor edits.</p>
+        </div>
+        <div class="feature">
+            <span class="feature-num">04 / WATERMARK</span>
+            <h3 class="feature-title">Hybrid DWT+DCT</h3>
+            <p class="feature-desc">Imperceptible forensic trace embedded in the luminance channel, with redundancy and a sync prefix.</p>
+        </div>
+    </section>
+
+    <!-- ============ DIVIDER ============ -->
+    <div class="section-divider">
+        <div class="section-divider-inner">
+            <div>
+                <div class="section-label">↓ Live Demo</div>
+                <h2 class="section-headline" style="margin-top: 12px;">Register or verify an image.</h2>
+            </div>
+            <p style="color: var(--text-muted); max-width: 40ch;">Drop in a PNG or JPEG. Register it to mint a provenance record, or verify one you've already registered.</p>
+        </div>
+    </div>
+
+    <!-- ============ APP ============ -->
+    <section class="app-section" id="app">
+        <div class="app-card">
+            <!-- Upload -->
+            <div class="upload-zone" id="uploadSection">
+                <div class="upload-icon">↑</div>
+                <h3>Upload an image</h3>
+                <p>Drag &amp; drop or click to select · PNG, JPG, WebP · up to 16&nbsp;MB</p>
                 <input type="file" id="fileInput" accept="image/*">
             </div>
 
-            <!-- Preview Section -->
+            <!-- Preview -->
             <div class="preview-section" id="previewSection">
                 <img id="previewImage" class="preview-image" alt="Preview">
-                <div class="button-group">
-                    <button class="btn btn-primary" id="registerBtn">📝 Register Image</button>
-                    <button class="btn btn-primary" id="verifyBtn">✓ Verify Image</button>
-                    <button class="btn btn-secondary" id="clearBtn">✕ Clear</button>
+                <div class="button-row">
+                    <button class="btn btn-primary" id="registerBtn">Register</button>
+                    <button class="btn btn-primary" id="verifyBtn">Verify</button>
+                    <button class="btn btn-secondary" id="clearBtn">Clear</button>
                 </div>
             </div>
 
             <!-- Loading -->
             <div class="loading" id="loading">
                 <div class="spinner"></div>
-                <p style="margin-top: 10px;">Processing...</p>
+                <p>Processing…</p>
             </div>
 
-            <!-- Results Section -->
+            <!-- Results -->
             <div class="results-section" id="resultsSection">
                 <div id="alertContainer"></div>
-                
+
                 <div class="result-card" id="resultCard" style="display: none;">
                     <h3 id="resultTitle">Results</h3>
                     <div id="resultContent"></div>
-                    
-                    <div class="json-toggle">
+
+                    <div class="action-row">
                         <button class="btn btn-secondary" id="jsonToggle">View JSON</button>
-                        <button class="btn btn-primary" id="reportBtn" style="display: none;">📊 View Forensic Report</button>
+                        <button class="btn btn-primary" id="reportBtn" style="display: none;">View forensic report</button>
                     </div>
-                    <div class="json-content" id="jsonContent"></div>
+                    <div class="json-content mono" id="jsonContent"></div>
                 </div>
 
                 <div class="report-section" id="reportSection">
-                    <h3>Forensic Report</h3>
+                    <h3 style="margin-bottom: 12px;">Forensic Report</h3>
                     <div class="report-content" id="reportContent"></div>
                 </div>
             </div>
         </div>
-    </div>
+    </section>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="site-footer">
+        <span class="mono">PROVENA</span> <span class="accent">·</span> research implementation · cryptographic provenance for AI-generated images
+    </footer>
 
     <script>
         let currentImageData = null;
         let currentImageId = null;
         let currentResponse = null;
 
-        // Upload section elements
         const uploadSection = document.getElementById('uploadSection');
         const fileInput = document.getElementById('fileInput');
         const previewSection = document.getElementById('previewSection');
@@ -344,17 +739,14 @@
         const reportSection = document.getElementById('reportSection');
         const reportContent = document.getElementById('reportContent');
 
-        // Buttons
         const registerBtn = document.getElementById('registerBtn');
         const verifyBtn = document.getElementById('verifyBtn');
         const clearBtn = document.getElementById('clearBtn');
         const jsonToggle = document.getElementById('jsonToggle');
         const reportBtn = document.getElementById('reportBtn');
 
-        // Upload section click
         uploadSection.addEventListener('click', () => fileInput.click());
 
-        // Drag and drop
         uploadSection.addEventListener('dragover', (e) => {
             e.preventDefault();
             uploadSection.classList.add('dragover');
@@ -373,19 +765,15 @@
             }
         });
 
-        // File input change
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
-            if (file) {
-                handleFile(file);
-            }
+            if (file) handleFile(file);
         });
 
-        // Handle file upload
         function handleFile(file) {
             const reader = new FileReader();
             reader.onload = (e) => {
-                currentImageData = e.target.result.split(',')[1]; // Base64 without prefix
+                currentImageData = e.target.result.split(',')[1];
                 previewImage.src = e.target.result;
                 uploadSection.style.display = 'none';
                 previewSection.style.display = 'block';
@@ -394,7 +782,6 @@
             reader.readAsDataURL(file);
         }
 
-        // Clear button
         clearBtn.addEventListener('click', () => {
             currentImageData = null;
             currentImageId = null;
@@ -406,32 +793,25 @@
             reportSection.style.display = 'none';
         });
 
-        // Register button
         registerBtn.addEventListener('click', async () => {
             if (!currentImageData) return;
-
             showLoading(true);
             clearResults();
-
             try {
                 const response = await fetch('/api/v1/images/register', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         image: currentImageData,
                         model_id: 'demo-model-v1',
                         timestamp: new Date().toISOString()
                     })
                 });
-
                 const data = await response.json();
                 currentResponse = data;
-
                 if (response.ok) {
                     currentImageId = data.image_id;
-                    showSuccess('Image registered successfully!');
+                    showSuccess('Image registered successfully.');
                     displayRegistrationResults(data);
                 } else {
                     showError('Registration failed: ' + (data.error || 'Unknown error'));
@@ -443,33 +823,24 @@
             }
         });
 
-        // Verify button
         verifyBtn.addEventListener('click', async () => {
             if (!currentImageData) return;
-
             showLoading(true);
             clearResults();
-
             try {
                 const response = await fetch('/api/v1/images/verify', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        image: currentImageData
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: currentImageData })
                 });
-
                 const data = await response.json();
                 currentResponse = data;
-
                 if (response.ok) {
                     currentImageId = data.image_id;
-                    showSuccess('Verification complete!');
+                    showSuccess('Verification complete.');
                     displayVerificationResults(data);
                 } else if (response.status === 404) {
-                    showError('Image not found in registry');
+                    showError('Image not found in registry.');
                     displayVerificationResults(data);
                 } else {
                     showError('Verification failed: ' + (data.error || 'Unknown error'));
@@ -481,9 +852,8 @@
             }
         });
 
-        // JSON toggle
         jsonToggle.addEventListener('click', () => {
-            if (jsonContent.style.display === 'none') {
+            if (jsonContent.style.display === 'none' || jsonContent.style.display === '') {
                 jsonContent.style.display = 'block';
                 jsonContent.textContent = JSON.stringify(currentResponse, null, 2);
                 jsonToggle.textContent = 'Hide JSON';
@@ -493,21 +863,17 @@
             }
         });
 
-        // Report button
         reportBtn.addEventListener('click', async () => {
             if (!currentImageId) return;
-
             showLoading(true);
-
             try {
                 const response = await fetch(`/api/v1/report/${currentImageId}?format=text`);
                 const text = await response.text();
-
                 if (response.ok) {
                     reportContent.textContent = text;
                     reportSection.style.display = 'block';
                 } else {
-                    showError('Failed to load report');
+                    showError('Failed to load report.');
                 }
             } catch (error) {
                 showError('Network error: ' + error.message);
@@ -516,7 +882,6 @@
             }
         });
 
-        // Helper functions
         function showLoading(show) {
             loading.style.display = show ? 'block' : 'none';
             registerBtn.disabled = show;
@@ -543,9 +908,9 @@
 
         function displayRegistrationResults(data) {
             resultCard.style.display = 'block';
-            document.getElementById('resultTitle').textContent = 'Registration Results';
-            
+            document.getElementById('resultTitle').textContent = 'Registration result';
             const html = `
+                <div class="status-badge status-verified">REGISTERED</div>
                 <div class="info-grid">
                     <div class="info-item">
                         <label>Image ID</label>
@@ -553,7 +918,7 @@
                     </div>
                     <div class="info-item">
                         <label>Perceptual Hash</label>
-                        <value>${data.perceptual_hash.substring(0, 16)}...</value>
+                        <value>${data.perceptual_hash.substring(0, 16)}…</value>
                     </div>
                     <div class="info-item">
                         <label>Key ID</label>
@@ -565,15 +930,14 @@
                     </div>
                 </div>
             `;
-            
             document.getElementById('resultContent').innerHTML = html;
             reportBtn.style.display = 'inline-block';
         }
 
         function displayVerificationResults(data) {
             resultCard.style.display = 'block';
-            document.getElementById('resultTitle').textContent = 'Verification Results';
-            
+            document.getElementById('resultTitle').textContent = 'Verification result';
+
             const statusClass = {
                 'verified': 'status-verified',
                 'verified_modified': 'status-verified',
@@ -583,23 +947,23 @@
             }[data.status] || 'status-not-found';
 
             let html = `
-                <div class="status-badge ${statusClass}">${data.status.toUpperCase().replace('_', ' ')}</div>
+                <div class="status-badge ${statusClass}">${data.status.toUpperCase().replace(/_/g, ' ')}</div>
             `;
 
             if (data.verification) {
                 html += `
                     <div class="info-grid">
                         <div class="info-item">
-                            <label>Watermark Extracted</label>
-                            <value>${data.verification.watermark_extracted ? '✓ Yes' : '✗ No'}</value>
+                            <label>Watermark</label>
+                            <value>${data.verification.watermark_extracted ? '✓ extracted' : '✗ not found'}</value>
                         </div>
                         <div class="info-item">
-                            <label>Signature Valid</label>
-                            <value>${data.verification.signature_valid ? '✓ Yes' : '✗ No'}</value>
+                            <label>Signature</label>
+                            <value>${data.verification.signature_valid ? '✓ valid' : '✗ invalid'}</value>
                         </div>
                         <div class="info-item">
-                            <label>Perceptual Match</label>
-                            <value>${data.verification.perceptual_match ? '✓ Yes' : '✗ No'}</value>
+                            <label>Perceptual match</label>
+                            <value>${data.verification.perceptual_match ? '✓ match' : '✗ no match'}</value>
                         </div>
                     </div>
                 `;
@@ -607,7 +971,7 @@
 
             if (data.provenance) {
                 html += `
-                    <h4 style="margin-top: 20px;">Provenance Information</h4>
+                    <h4>Provenance</h4>
                     <div class="info-grid">
                         <div class="info-item">
                             <label>Model ID</label>
@@ -626,11 +990,20 @@
             }
 
             document.getElementById('resultContent').innerHTML = html;
-            
-            if (data.image_id) {
-                reportBtn.style.display = 'inline-block';
-            }
+            if (data.image_id) reportBtn.style.display = 'inline-block';
         }
+
+        // Scroll reveal for the features section
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    revealObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.15 });
+
+        document.querySelectorAll('.reveal').forEach((el) => revealObserver.observe(el));
     </script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 """
-Forensic Report Service for Provena-FLASK.
+Forensic Report Service for Provena.
 
 Generates comprehensive forensic reports for image provenance verification.
 Includes verdict, confidence scoring, and system limitations.
@@ -329,7 +329,7 @@ class ForensicReportService:
         """
         lines = []
         lines.append("="*70)
-        lines.append("PROVENA-FLASK: AI IMAGE PROVENANCE & FORENSIC VERIFICATION REPORT")
+        lines.append("PROVENA: AI IMAGE PROVENANCE & FORENSIC VERIFICATION REPORT")
         lines.append("="*70)
         lines.append(f"Report ID: {report['report_id']}")
         lines.append(f"Image ID: {report['image_id']}")

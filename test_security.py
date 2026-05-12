@@ -18,7 +18,7 @@ from provena_flask.services.security_service import (
 def run_tests():
     """Run security and audit tests."""
     print("\n" + "="*70)
-    print("  PROVENA-FLASK SECURITY & AUDIT TEST SUITE")
+    print("  PROVENA SECURITY & AUDIT TEST SUITE")
     print("  Phase 7: Security, Logging, and Audit")
     print("="*70)
     

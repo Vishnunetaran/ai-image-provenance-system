@@ -1,5 +1,5 @@
 """
-Demo Web Interface blueprint for Provena-FLASK.
+Demo Web Interface blueprint for Provena.
 
 Provides a simple UI for demonstrating the system capabilities.
 """

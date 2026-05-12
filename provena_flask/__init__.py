@@ -1,5 +1,5 @@
 """
-Provena-FLASK: AI Image Provenance & Forensic Verification Service
+Provena: AI Image Provenance & Forensic Verification Service
 
 Flask application factory for the provenance verification system.
 """
@@ -36,7 +36,7 @@ def create_app(config_name='development'):
     def health_check():
         return {'status': 'healthy', 'service': 'provena-flask'}, 200
     
-    app.logger.info(f"Provena-FLASK initialized in {config_name} mode")
+    app.logger.info(f"Provena initialized in {config_name} mode")
     
     return app
 

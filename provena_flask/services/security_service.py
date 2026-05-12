@@ -1,5 +1,5 @@
 """
-Security and Audit Service for Provena-FLASK.
+Security and Audit Service for Provena.
 
 Provides structured logging, audit trails, and security utilities.
 """
