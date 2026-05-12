@@ -1,417 +1,352 @@
-# PROVENA
+# Provena
 
-**AI Image Provenance & Forensic Verification System**
+**Forensic provenance for AI-generated images.**
 
-A cryptographic provenance tracking and forensic verification system for AI-generated images, where **cryptographic signatures and append-only registry provide authoritative proof of origin**, supplemented by forensic watermarking traces.
-
----
-
-## Overview
-
-PROVENA is a research implementation of a comprehensive AI image provenance system that establishes **cryptographic traceability** for AI-generated images. The system uses Ed25519 digital signatures and an append-only registry as the authoritative proof of origin, with invisible watermarking providing supplementary forensic evidence when extractable.
-
-### Core Principle
-
-**Cryptographic Provenance, Not Watermark Detection**
-
-This system is fundamentally a **cryptographic provenance platform**, not a watermarking product. Verification relies primarily on:
-
-1. **Ed25519 Digital Signatures** (Primary) - Cryptographic proof of metadata integrity
-2. **Append-Only Registry** (Primary) - Tamper-evident provenance storage
-3. **Perceptual Hashing** (Secondary) - Tolerant image matching
-4. **Invisible Watermarking** (Supplementary) - Forensic trace when extractable
+Drop in any image, get a **Photo Receipt** back — a set of seven independently-verifiable signals describing what the system can and cannot say about that image, plus a novel forensic primitive called **Echo Signature** that measures the post-registration processing channel an image has traveled through.
 
 ---
 
-## What This System Proves
+## What is the Photo Receipt?
 
-### ✅ Authoritative Cryptographic Proof
+The Photo Receipt is the main product surface. Every signal is independent — they are evidence, not a single up/down verdict — and each is honest about what it can and cannot prove.
 
-- **Metadata Integrity**: Image was registered with specific metadata (model, timestamp)
-- **Tamper Detection**: Metadata has not been altered (cryptographic signature)
-- **Provenance Chain**: Complete audit trail in append-only registry
-- **Perceptual Similarity**: Image is perceptually similar to registered image
+| # | Signal | What it answers |
+|---|--------|------------------|
+| 1 | `manifest` | Is there a Provena/C2PA-shaped Ed25519-signed manifest in the EXIF, and does it verify against this image's perceptual hash? |
+| 2 | `watermark` | Did TrustMark extract a valid 48-bit payload, and does that payload resolve to a record in our registry? |
+| 3 | `edit_trace` | **Novel.** Echo Signature — a quantitative measurement of the channel the image traveled through since registration. |
+| 4 | `registry` | Does the image's pHash match anything in our registry (exact, near-duplicate, or absent)? |
+| 5 | `exif` | What does the EXIF say about camera, time, GPS, software, copyright? |
+| 6 | `jpeg` | Are the JPEG quantization tables standard (camera-direct) or custom (editor re-save)? |
+| 7 | `image` | Dimensions, format, color mode, file size, perceptual hash. |
 
-### ⚠️ Supplementary Forensic Evidence
+Signals report `verified`, `found`, `absent`, `warning`, or `unknown` — never invented labels.
 
-- **Watermark Presence**: Invisible watermark may provide additional forensic trace
-- **Watermark Extraction**: Probabilistic, may fail under compression/resizing
-- **Forensic Signal**: Watermark is supporting evidence, NOT primary proof
+---
 
-### ❌ What This System Does NOT Prove
+## The novel contribution: Echo Signature
 
-- **Pixel-Level Integrity**: Cannot prove image pixels are unmodified
-- **Timestamp Accuracy**: Timestamps are self-reported, not independently verified
-- **Image Authenticity**: Only proves registration, not that image is "real"
-- **Perfect Detection**: Watermark extraction is probabilistic and may fail
+Existing watermark systems (TrustMark, SynthID, Stable Signature) **correct** bit errors and discard the error pattern as noise. Echo inverts the framing: the watermark is the **probe**, and the bit-error pattern is the **measurement** of the unknown channel the image traveled through.
+
+### Mechanism
+
+At registration, the DCT layer embeds a 48-bit payload at known coefficient positions in the green channel. At verification, we read both:
+
+- **Hard bits** — 0/1 thresholded decisions.
+- **Soft signal** — signed distance from the QIM decision boundary, normalized to `[-1, +1]`.
+
+Comparing the extracted hard bits to the registered payload gives a bit-error pattern. From that pattern plus the soft signal we compute a six-component **Echo Vector**:
+
+| Component | Meaning |
+|-----------|---------|
+| `bit_error_rate` | Hard-bit BER — channel damage magnitude |
+| `spatial_entropy` | Shannon entropy of error positions across a 4×4 image grid (bits) |
+| `spectral_low_pct` | Fraction of error energy in low DCT frequencies (blur signature) |
+| `spectral_high_pct` | Fraction in high frequencies (compression / sharpen) |
+| `soft_mean_abs` | Mean of \|soft signal\| — strength of surviving signal |
+| `soft_std` | Std of the soft signal — mixed vs uniform channel |
+
+Each component is quantized to 8 bits. The six bytes are encoded directly as 12 hex characters — **not** SHA-256-hashed:
+
+```
+[ber][entropy][low][high][soft_mean][soft_std]
+ 2x   2x      2x   2x    2x         2x         = 12 hex chars
+```
+
+The critical design choice is plain hex encoding, which preserves L1 distance in feature space. Two images with similar processing histories produce Hamming-close fingerprints — cross-image similarity is a real semantic metric, not a hash-collision rate.
+
+### Validated experimentally
+
+| Comparison | Similarity |
+|------------|------------|
+| Same channel, different image: clean A vs clean B | **0.996** |
+| Same channel, different image: q=75 A vs q=75 B | **0.982** |
+| Same channel, different image: blur r=3 A vs blur r=3 B | **0.983** |
+| Different channel, same image: clean A vs q=75 A | **0.536** |
+| Different channel, same image: q=75 A vs blur r=1 A | **0.928** |
+
+Every same-channel pair scored above 0.97; every different-channel pair scored below 0.93. 10/10 unique fingerprints across a 10-channel sweep, with the first 8 hex chars encoding the channel and the last 4 encoding image-specific finishing touches. Reproducible (same input → same output).
+
+### Where the code lives
+
+```
+provena_flask/services/signals/echo_probe.py        # math primitive
+provena_flask/services/signals/edit_trace_probe.py  # Photo Receipt wrapper
+provena_flask/services/echo_registry.py             # persistence + similarity search
+migrations/004_echo_fingerprints.sql                # PostgreSQL schema
+```
+
+### Honest limitations
+
+- **DCT layer saturation.** Between JPEG q≈75 and q≈30, BER hard-clips to roughly the same value because coefficient (4,3) collapses to ~0. Soft moments separate them but only weakly. This fragility is **intentional** — it's what makes the layer a useful channel probe. Don't "fix" it.
+- **Channel dominates the prefix.** Image content contributes to the last 4 hex chars; the channel dominates the first 8. Cross-image clustering works via the similarity function, not exact-prefix matching.
+- **Needs ground truth.** Echo requires the canonical registered payload. On unregistered images, `edit_trace` correctly reports `absent`.
 
 ---
 
 ## Architecture
 
-### System Components
+```
+provena_flask/
+├── __init__.py                     # app factory; /health probes DB + signing key
+├── auth.py                         # API keys, SHA-256 storage, persisted daily rate limits
+├── config.py                       # env-keyed config; HAMMING_MAX = 10
+├── errors.py                       # {"error": {code, message, request_id}} envelope
+├── blueprints/
+│   ├── api.py                      # /api/v1/* — main API surface
+│   ├── demo.py                     # /  → landing.html,  /app → demo.html
+│   └── (registry, watermark, verification, reports)  # legacy stubs
+├── models/
+│   ├── db.py                       # SQLite/Postgres: pHash search, idempotency cache,
+│   │                               #   api_usage, echo_fingerprints
+│   └── provenance.py               # legacy dataclass
+├── services/
+│   ├── c2pa_service.py             # Ed25519 manifest + EXIF embed (pHash-bound)
+│   ├── neural_watermark_service.py # TrustMark wrapper (lazy-loaded)
+│   ├── hydra_watermark.py          # runs all 3 watermark layers at embed time
+│   ├── payload_codec.py            # 4B record_id + 2B Reed-Solomon ECC = 6 bytes
+│   ├── echo_registry.py            # Echo fingerprint persistence + similarity
+│   ├── layers/
+│   │   ├── neural_layer.py         # TrustMark
+│   │   ├── dct_layer.py            # QIM at coeff (4,3), GREEN channel — channel probe
+│   │   └── spatial_layer.py        # LSB with dim-seeded PRNG (fragile)
+│   └── signals/                    # Photo Receipt orchestration
+│       ├── _inspect.py             # runs all 7 probes in display order
+│       ├── manifest_probe.py
+│       ├── watermark_probe.py
+│       ├── edit_trace_probe.py     # Echo Signature wrapper
+│       ├── echo_probe.py           # Echo math primitive
+│       ├── registry_probe.py
+│       ├── exif_probe.py
+│       ├── jpeg_probe.py
+│       └── image_facts.py
+└── templates/
+    ├── landing.html                # /  — Kickstarter-style pitch
+    └── demo.html                   # /app — Photo Receipt UI
+```
+
+### Watermark layers
+
+Three layers are run at embed time; verification is **registry-aware** — each layer's payload is tried independently against the registry and the first hit wins. The old majority-vote scheme has been removed (DCT/LSB could outvote TrustMark with junk).
+
+| Layer | Role | Notes |
+|-------|------|-------|
+| Neural (TrustMark) | Primary watermark for verification | Lazy-loaded, ~5 s first call, ~700 MB weights |
+| DCT | Channel probe (Echo Signature) | Intentionally fragile under JPEG ≤ q=80 |
+| Spatial (LSB) | Diagnostic only | Dies under any resize |
+
+### Migrations
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                   CRYPTOGRAPHIC PROVENANCE LAYER                 │
-│  ┌────────────────────────────────────────────────────────┐     │
-│  │  Ed25519 Digital Signatures (PRIMARY PROOF)            │     │
-│  │  • Metadata signing with private key                   │     │
-│  │  • Signature verification with public key              │     │
-│  │  • Cryptographically unforgeable                       │     │
-│  └────────────────────────────────────────────────────────┘     │
-│  ┌────────────────────────────────────────────────────────┐     │
-│  │  Append-Only Registry (AUTHORITATIVE STORAGE)          │     │
-│  │  • SQLite with append-only constraints                 │     │
-│  │  • Tamper-evident provenance records                   │     │
-│  │  • Complete audit trail                                │     │
-│  └────────────────────────────────────────────────────────┘     │
-└─────────────────────────────────────────────────────────────────┘
-                             ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    FORENSIC VERIFICATION LAYER                   │
-│  ┌────────────────────────────────────────────────────────┐     │
-│  │  Perceptual Hashing (SECONDARY VERIFICATION)           │     │
-│  │  • pHash, dHash, aHash                                 │     │
-│  │  • Tolerant to minor modifications                     │     │
-│  │  • Hamming distance matching                           │     │
-│  └────────────────────────────────────────────────────────┘     │
-│  ┌────────────────────────────────────────────────────────┐     │
-│  │  Invisible Watermarking (SUPPLEMENTARY TRACE)          │     │
-│  │  • Hybrid DWT+DCT embedding                            │     │
-│  │  • Forensic trace when extractable                     │     │
-│  │  • May fail under compression/resizing                 │     │
-│  └────────────────────────────────────────────────────────┘     │
-└─────────────────────────────────────────────────────────────────┘
+001_initial_schema.sql           # provenance_records, manifests, api_keys
+002_audit_log.sql                # verification_log (append-only)
+003_usage_and_idempotency.sql    # api_usage, idempotency_cache, idx_prov_payload_hex
+004_echo_fingerprints.sql        # Echo Signature persistence
 ```
 
-### Verification Hierarchy
-
-**Tier 1 (Authoritative)**: Cryptographic Signature + Registry  
-**Tier 2 (Robust)**: Perceptual Hash Matching  
-**Tier 3 (Supplementary)**: Watermark Extraction  
+SQLite bootstrap creates all of these inline in `db.py`.
 
 ---
 
-## Key Features
+## API surface
 
-### 🔐 Cryptographic Provenance (Primary)
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| `POST` | `/api/v1/register` | ✅ | Stamp image with TrustMark + C2PA-shaped manifest |
+| `POST` | `/api/v1/verify` | ✅ | 3-tier verify: manifest → watermark → pHash |
+| `POST` | `/api/v1/inspect` | ✅ | **Photo Receipt** — main product surface |
+| `POST` | `/api/v1/keys` | open | Issue `prov_sk_*` API keys |
+| `DELETE` | `/api/v1/keys/<id>` | ✅ | Soft-delete (revoke) |
+| `GET` | `/api/v1/manifests/<id>` | ✅ | |
+| `GET` | `/api/v1/records/<id>` | ✅ | (`payload_hex` truncated) |
+| `GET` | `/api/v1/usage` | ✅ | Per-key daily quotas |
+| `GET` | `/api/v1/status` | open | Health / version |
+| `POST` | `/api/v1/images/register` | open | Legacy proxy used by the bundled demo UI |
+| `POST` | `/api/v1/images/verify` | open | Legacy |
+| `POST` | `/api/v1/images/inspect` | open | Legacy — used by bundled demo UI |
+| `GET` | `/health` | open | Probes DB + signing key |
+| `GET` | `/` | open | Landing page |
+| `GET` | `/app` | open | Photo Receipt UI |
 
-- **Ed25519 Digital Signatures**: Industry-standard elliptic curve cryptography
-- **Append-Only Registry**: Tamper-evident SQLite database
-- **Key Management**: Secure key generation, storage, and rotation
-- **Audit Logging**: Complete operation tracking
+All errors return a standardized envelope:
 
-### 🔍 Forensic Verification (Secondary)
-
-- **Perceptual Hashing**: DCT-based pHash, gradient-based dHash, average-based aHash
-- **Tolerant Matching**: Hamming distance with configurable threshold
-- **Robust to Modifications**: Survives compression, resizing, minor edits
-
-### 🎨 Forensic Watermarking (Supplementary)
-
-- **Hybrid DWT+DCT (v2.0)**: Frequency-domain embedding on the luminance channel
-- **Imperceptible**: PSNR ≥45dB, SSIM ≥0.99 targets (configurable)
-- **Robustness aids**: 5x redundant bit embedding with majority voting, 16-bit sync prefix, repetition-coded payload
-- **Forensic Trace**: Provides additional evidence when extractable
-- **Honest Limitations**: Can still be lost under heavy JPEG (Q<50), cropping, rotation, or aggressive filtering
-
-### 📊 Forensic Reporting
-
-- **5-Level Verdict System**: authentic, likely_authentic, suspicious, tampered, not_found
-- **Confidence Scoring**: 0.0-1.0 scale based on multiple verification layers
-- **Evidence Summary**: Clear breakdown of cryptographic, perceptual, and watermark evidence
-- **Limitations Disclosure**: Every report includes known system limitations
-
-### 🛡️ Security & Audit
-
-- **Rate Limiting**: 60 requests/minute per IP
-- **Input Validation**: SQL injection prevention, size limits
-- **Structured Logging**: JSON-formatted audit trails
-- **Security Event Tracking**: Comprehensive attack detection
+```json
+{"error": {"code": "...", "message": "...", "request_id": "..."}}
+```
 
 ---
 
-## API Endpoints
+## What Provena does NOT claim
 
-All JSON endpoints accept and return `application/json`. Images are passed as base64-encoded strings (max 16 MB; allowed types: png, jpg, jpeg, webp).
-
-### Core Provenance APIs
-
-| Method | Path | Purpose |
-|--------|------|---------|
-| `POST` | `/api/v1/images/register` | Establish cryptographic provenance for an AI-generated image. Returns signature, registry record, and watermarked image. |
-| `POST` | `/api/v1/images/verify` | Verify an image. Returns verdict (`verified`, `verified_modified`, `tampered`, `not_found`) plus per-layer signals (signature, perceptual hash, watermark). |
-| `GET` | `/api/v1/provenance/<image_id>` | Retrieve the full provenance record (metadata, signature, public key, timestamps). |
-| `GET` | `/api/v1/report/<image_id>` | Generate a forensic report. Supports `?format=text` for human-readable output; default is JSON. The same report is also served at `/reports/<image_id>`. |
-
-### Status / Health
-
-| Method | Path | Purpose |
-|--------|------|---------|
-| `GET` | `/health` | App-level health check. |
-| `GET` | `/api/v1/status` | API liveness. |
-| `GET` | `/registry/status`, `/watermark/status`, `/verification/status`, `/reports/status` | Per-service liveness. |
-| `GET` | `/` | Demo UI (drag-and-drop register/verify, JSON inspection, forensic report viewer). |
-
-### Stub routes (return 501)
-
-`GET /registry/records`, `POST /watermark/embed`, `POST /watermark/extract`, and `POST /verification/check` are scaffolded but not implemented — the embedded/extracted operations happen inside `/api/v1/images/register` and `/api/v1/images/verify`.
+- **Not C2PA-compliant.** The system emits C2PA-*shaped* JSON-with-signature, not output from the official `c2pa-python` SDK. Real C2PA verifiers won't accept it.
+- **Not an AI-image detector.** Classifier-based detectors don't generalize across models; Provena measures provenance and channel, not "is this AI."
+- **Not a single source of truth.** The registry is local. Federated cross-attestation (the Provenance Mesh) is sketched but not built.
+- **Not a forensic verdict engine.** The heuristic `forensic_analyzer` was found to false-positive on every natural image and is disabled. The Photo Receipt reports independent signals; humans interpret.
 
 ---
 
-## System Limitations
-
-### Watermark Robustness (Known Limitation)
-
-**Limitation**: Watermark extraction is probabilistic. The v2.0 hybrid DWT+DCT engine with redundancy and synchronization significantly improves resilience over a basic DWT scheme, but extraction can still fail under aggressive transformations.
-
-**Designed to survive**: JPEG Q≥75, ±10% resizing, basic format conversion (PNG↔JPEG).
-
-**Will likely fail under**: extreme compression (Q<50), cropping, rotation, heavy filtering, or geometric attacks beyond the sync window.
-
-**Impact**: Watermark provides supplementary forensic trace only. **Cryptographic verification remains authoritative** even when watermark extraction fails — the `verified_modified` verdict is the expected outcome in that case, not a failure.
-
-**Mitigation**: System relies primarily on cryptographic signatures and perceptual hashing, which are robust and reliable.
-
-### Timestamp Trust
-
-**Limitation**: Timestamps are self-reported by AI model provider, not independently verified.
-
-**Impact**: Cannot cryptographically prove when image was generated.
-
-**Mitigation**: Trust model relies on reputation of AI model provider. Future: blockchain timestamping.
-
-### Pixel-Level Integrity
-
-**Limitation**: System proves metadata integrity, not pixel-by-pixel identity.
-
-**What We Prove**: Metadata signed, perceptual similarity  
-**What We Don't Prove**: Pixels unmodified, no post-processing
-
-**Impact**: Verified image may have been edited after generation.
-
-**Mitigation**: Perceptual hash catches major changes; minor edits are undetectable.
-
-### Blind Watermarking
-
-**Limitation**: Watermark extraction is "blind" (no original image reference).
-
-**Impact**: Extraction relies on absolute coefficient values, which are unreliable after compression.
-
-**Mitigation**: Watermark is supplementary only. Cryptographic verification is primary.
-
-### Centralized Trust
-
-**Limitation**: Registry is centralized, not distributed.
-
-**Impact**: Trust in system operator required. Single point of failure.
-
-**Mitigation**: Append-only constraints prevent tampering. Future: blockchain integration.
-
----
-
-## Relation to Industry Standards
-
-### Conceptual Alignment
-
-This system is **conceptually aligned** with cryptographic provenance models used in industry standards:
-
-- **C2PA (Coalition for Content Provenance and Authenticity)**: Uses cryptographic signatures and manifest files
-- **Adobe Content Credentials**: Embeds provenance metadata with digital signatures
-- **OpenAI Metadata Approaches**: Cryptographic signing of AI-generated content
-
-### Key Differences
-
-**This is NOT a C2PA implementation**, but shares the same fundamental principle:
-
-> **Cryptographic signatures provide authoritative proof of provenance, not watermarks.**
-
-**Similarities**:
-- Digital signatures for metadata integrity
-- Tamper-evident provenance storage
-- Multi-layer verification approach
-
-**Differences**:
-- C2PA uses JUMBF manifests; we use SQLite registry
-- C2PA has broader scope (photos, videos, documents); we focus on AI images
-- C2PA is production-ready; this is a research implementation
-
----
-
-## Installation
+## Setup
 
 ### Prerequisites
 
-- Python 3.8+
-- Virtual environment (recommended)
+- Python 3.13
+- ~1 GB free for TrustMark model weights (downloaded on first call)
 
-### Setup
-
-```bash
-# Clone repository
-git clone <repository-url>
-cd ai-image-provenance-system
-
-# Create virtual environment
-python -m venv venv
-
-# Activate virtual environment
-# Windows:
-.\venv\Scripts\activate
-# Linux/Mac:
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# (Optional) copy and edit environment file
-cp .env.example .env
-```
-
-### Run Server
+### One-time setup
 
 ```bash
-python run.py
+python3 -m venv /tmp/provena-venv
+/tmp/provena-venv/bin/pip install -r requirements.txt
 ```
 
-Server starts on `http://0.0.0.0:5000`. The demo UI is at `http://localhost:5000/`, and a health check is exposed at `/health`.
+The first TrustMark invocation downloads ~700 MB of weights to:
 
-The first call to `/api/v1/images/register` will auto-generate an Ed25519 key pair under `./keys/` and create the SQLite registry under `./data/`. Both directories are git-ignored.
+```
+/tmp/provena-venv/lib/python3.13/site-packages/trustmark/models/
+```
+
+That call takes ~5 s; subsequent calls are fast.
+
+### Optional: enable manifest signing
+
+Without an Ed25519 key pair, manifests are emitted unsigned and `/health` reports `signing_key: missing` (a warning is logged). To enable signing, drop:
+
+```
+keys/default_private.pem
+keys/default_public.pem
+```
+
+Both files are `.gitignore`d.
 
 ---
 
-## Usage
+## Boot the server
 
-### Demo Web Interface
+Port 5000 conflicts with macOS AirPlay Receiver — use 5010+ for dev.
 
-Open browser to `http://localhost:5000/`
+```bash
+SQLITE_PATH=/tmp/provena_dev.db /tmp/provena-venv/bin/python -c "
+import os
+os.environ.setdefault('FLASK_ENV', 'development')
+from provena_flask import create_app
+app = create_app('development')
+app.run(host='127.0.0.1', port=5020, debug=False, use_reloader=False)
+"
+```
 
-**Features**:
-- Drag-and-drop image upload
-- Register image with cryptographic provenance
-- Verify image using multi-layer forensic analysis
-- View comprehensive forensic reports
+Then visit:
 
-### API Usage (Python)
+- <http://localhost:5020/> — landing page
+- <http://localhost:5020/app> — Photo Receipt UI
+
+---
+
+## Verify the Echo Signature end-to-end
 
 ```python
-import requests
-import base64
+import base64, io, requests
+from PIL import Image, ImageFilter
+import numpy as np
 
-# Register image
-with open('image.png', 'rb') as f:
-    image_b64 = base64.b64encode(f.read()).decode()
+API = "http://localhost:5020"
 
-response = requests.post('http://localhost:5000/api/v1/images/register', json={
-    'image': image_b64,
-    'model_id': 'gpt-vision-v1',
-    'timestamp': '2026-01-26T19:00:00Z'
-})
+def make_image(seed, size=512):
+    rng = np.random.default_rng(seed)
+    arr = np.zeros((size, size, 3), dtype=np.float32)
+    for o in (4, 8, 16, 32, 64):
+        s = max(1, size // o)
+        c = rng.normal(0, 60, (o, o, 3))
+        arr += np.repeat(np.repeat(c, s, axis=0), s, axis=1)[:size, :size] / np.log2(o + 1)
+    arr = (255 * (arr - arr.min()) / (arr.max() - arr.min())).clip(0, 255).astype(np.uint8)
+    return Image.fromarray(arr)
 
-result = response.json()
-print(f"Image ID: {result['image_id']}")
-print(f"Signature: {result['signature'][:50]}...")
+def to_png(img):
+    b = io.BytesIO(); img.save(b, format="PNG"); return b.getvalue()
 
-# Verify image
-response = requests.post('http://localhost:5000/api/v1/images/verify', json={
-    'image': image_b64
-})
+def to_jpg(img, q):
+    b = io.BytesIO(); img.save(b, format="JPEG", quality=q); return b.getvalue()
 
-result = response.json()
-print(f"Verdict: {result['status']}")
-print(f"Signature Valid: {result['verification']['signature_valid']}")
-print(f"Perceptual Match: {result['verification']['perceptual_match']}")
-print(f"Watermark Present: {result['verification']['watermark_extracted']}")
+img = make_image(2026)
+r = requests.post(f"{API}/api/v1/images/register", json={
+    "image": base64.b64encode(to_png(img)).decode(),
+    "model_id": "echo-test",
+    "timestamp": "2026-05-12T00:00:00Z",
+}, timeout=300).json()
+stamped = base64.b64decode(r["watermarked_image"])
+stamped_img = Image.open(io.BytesIO(stamped)).convert("RGB")
+
+for label, b in [
+    ("clean",     stamped),
+    ("JPEG q=75", to_jpg(stamped_img, 75)),
+    ("blur r=2",  to_png(stamped_img.filter(ImageFilter.GaussianBlur(radius=2)))),
+]:
+    r = requests.post(f"{API}/api/v1/images/inspect",
+                      json={"image": base64.b64encode(b).decode()},
+                      timeout=180).json()
+    et = next(s for s in r["signals"] if s["key"] == "edit_trace")
+    ev = et["evidence"]
+    print(f"{label:12} BER={ev['bit_error_rate']}  soft_μ={ev['soft_mean_abs']}  fp={ev['fingerprint']}")
 ```
+
+Expected shape (exact numbers vary per machine):
+
+```
+clean        BER=  0.0%  soft_μ=0.7xx  fp=00000000xxxx
+JPEG q=75    BER=4x–5x%  soft_μ=0.9xx  fp=<8-char channel prefix><4-char image suffix>
+blur r=2     BER=4x–5x%  soft_μ=0.5–0.6  fp=<distinguishable from JPEG>
+```
+
+If `edit_trace` returns `status: absent`, the watermark didn't survive extraction — confirm TrustMark is installed and you're inspecting the **stamped** image, not the original.
 
 ---
 
-## Testing
-
-Each script is a standalone runner that exits non-zero on failure. With the Flask server stopped (most are unit tests), run any of:
+## Tests
 
 ```bash
-python test_crypto.py                    # Ed25519 sign/verify
-python test_registry.py                  # Append-only registry semantics
-python test_phash.py                     # Perceptual hashing
-python test_watermark.py                 # Hybrid DWT+DCT embed/extract
-python test_forensic.py                  # Forensic report service
-python test_security.py                  # Input validation, rate limiting
-python test_security_attacks.py          # Attack scenarios
-python test_robustness.py                # Watermark survival under transforms
-python test_verification_accuracy.py     # End-to-end verdict accuracy
+/tmp/provena-venv/bin/python -m pytest tests/unit -v
 ```
 
-Endpoint and integration tests require the server running (`python run.py`):
+Last known: 42 passed, 4 honestly-skipped (recompression detection deferred).
 
-```bash
-python test_api.py                       # /api/v1/images/* round-trip
-python test_endpoints.py                 # Status / health routes
-python test_integration.py               # Full register → verify flow
-python test_forensic_report_endpoint.py  # /api/v1/report/<id>
-```
+---
 
-`demo_crypto.py` is a standalone walkthrough of the signing/verification flow with no server required.
+## Open threads
+
+- **Provenance Mesh** — federated cross-attestation via daily Merkle roots. Sketched, not built. Would close the C2PA single-source-of-truth gap; needs a multi-node demo.
+- **Real C2PA SDK** — `c2pa_service.py` currently emits custom JSON-with-signature; productization should swap in `c2pa-python`.
+- **Echo Signature classifier** — currently outputs raw quantitative facts. A small logistic regression on labeled data could map `(BER, entropy, spectral, soft moments)` → edit-type labels (`jpeg-q-N`, `blur-r-N`, `crop-X%`). Needs a synthesized labeled dataset.
+- **Onboarding flow** — the landing CTA goes to `/app`, but users arrive with no API key. The demo currently uses the unauthenticated legacy `/api/v1/images/*` endpoints. A "create key" wizard is the next product step.
+- **Workshop writeup** — the Echo Signature primitive merits a paper-length writeup.
 
 ---
 
 ## Documentation
 
-- [README.md](README.md) — this file: overview, install, API surface
-- [TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md) — architecture, verification flow, threat model, limitations
+- [README.md](README.md) — this file
+- [TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md) — architecture, verification flow, threat model
 - [DEMO_GUIDE.md](DEMO_GUIDE.md) — demo scenarios and talking points
-
----
-
-## Project Status
-
-**Status**: Research Implementation Complete
-
-**Suitable For**:
-- ✅ Research and academic use
-- ✅ Proof-of-concept demonstrations
-- ✅ Educational purposes
-- ✅ Internal provenance tracking
-
-**NOT Suitable For**:
-- ❌ Production deepfake detection
-- ❌ Legal evidence (without expert validation)
-- ❌ High-security adversarial environments
-- ❌ Watermark-based verification (use cryptographic verification)
-
----
-
-## License
-
-Research Use Only
-
----
-
-## Contributing
-
-This is a research implementation. For production use, consider:
-- Commercial watermarking SDKs (Digimarc, Vobile)
-- C2PA implementation libraries
-- Blockchain-based timestamping
-- Hardware Security Modules (HSM) for key storage
+- `CLAUDE.md` / `CHANGELOG.md` — agent-facing handoff and per-phase audit trail (when present)
 
 ---
 
 ## Acknowledgments
 
-Built with:
-- **Flask**: Web framework
-- **cryptography**: Ed25519 signatures
-- **OpenCV**: Image processing
-- **PyWavelets**: DWT watermarking
-- **SQLite**: Append-only registry
+Built on:
 
-Inspired by:
-- C2PA (Coalition for Content Provenance and Authenticity)
-- Adobe Content Credentials
-- Cryptographic provenance research
+- **Flask** — web framework
+- **TrustMark** — neural watermarking
+- **cryptography** — Ed25519 signatures
+- **OpenCV**, **Pillow**, **PyWavelets** — image processing
+- **SQLite** / **PostgreSQL** — registry + Echo fingerprint store
+
+Related work (key papers):
+
+- Lin (2009) — *Digital Image Source Coder Forensics Via Intrinsic Fingerprints* (pixel-level coder forensics; not watermark-based)
+- C2PA technical specification
+- TrustMark, SynthID, Stable Signature — robustness-focused watermark systems
+- arXiv 2510.05978, 2511.05598 — diffusion-based watermark removal
+- arXiv 2502.19567 — Atlas: federated provenance for ML pipelines
 
 ---
 
-**PROVENA**: Cryptographic provenance for AI images, with forensic watermarking as supplementary evidence.
+**Provena**: forensic image provenance with a novel channel-measurement primitive — Echo Signature.
