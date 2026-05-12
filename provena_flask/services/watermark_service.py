@@ -309,9 +309,15 @@ class WatermarkService:
         
         # Apply DCT
         HL_dct = self._apply_dct_blocks(HL)
-        
-        # Extract bits with redundancy
-        total_bits = len(self.SYNC_PATTERN) + payload_length * 8
+
+        # Extract bits with redundancy.
+        # Read SYNC_SEARCH_WINDOW extra bits so the payload can still be
+        # sliced cleanly even when the sync prefix is detected with a
+        # small offset (off-by-one is common on clean roundtrips because
+        # the very first coefficient is borderline).
+        sync_search_window = 32
+        payload_bits_needed = payload_length * 8
+        total_bits = len(self.SYNC_PATTERN) + payload_bits_needed + sync_search_window
         extracted_bits_redundant = self._extract_bits_redundant(HL_dct, total_bits)
         
         if extracted_bits_redundant is None:

@@ -240,11 +240,14 @@ def verify_image():
         if image_id:
             provenance = registry.get_provenance(image_id)
         
-        # If not found by watermark, try perceptual hash matching
+        # If not found by watermark, try perceptual hash matching with
+        # Hamming-distance tolerance. The watermark embedding perturbs the
+        # luminance slightly, so a clean roundtrip's pHash is *close* to the
+        # registered one, not identical.
         perceptual_match = False
         if not provenance:
-            # Search by perceptual hash
-            matches = registry.search_by_perceptual_hash(current_phash)
+            phash_tolerance = current_app.config.get('PHASH_VERIFY_DISTANCE', 12)
+            matches = registry.search_by_perceptual_hash(current_phash, max_distance=phash_tolerance)
             if matches:
                 provenance = matches[0]
                 perceptual_match = True

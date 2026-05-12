@@ -245,23 +245,22 @@ class RegistryService:
         
         return records
     
-    def search_by_perceptual_hash(self, perceptual_hash: str) -> List[Dict[str, Any]]:
+    def search_by_perceptual_hash(self, perceptual_hash: str, max_distance: int = 0) -> List[Dict[str, Any]]:
         """
-        Search records by perceptual hash.
-        
-        This is used for tolerant image matching.
-        
+        Search records by perceptual hash with optional Hamming-distance tolerance.
+
         Args:
-            perceptual_hash: Perceptual hash string
-        
+            perceptual_hash: Perceptual hash string (hex)
+            max_distance: Maximum Hamming distance (bits). 0 = exact match.
+
         Returns:
-            list[dict]: Matching records
+            list[dict]: Matching records (sorted ascending by distance when tolerant).
         """
         db = self._get_db()
-        records = db.search_by_perceptual_hash(perceptual_hash)
-        
-        logger.debug(f"Found {len(records)} records for perceptual hash")
-        
+        records = db.search_by_perceptual_hash(perceptual_hash, max_distance=max_distance)
+
+        logger.debug(f"Found {len(records)} records for perceptual hash (max_distance={max_distance})")
+
         return records
     
     def get_statistics(self) -> Dict[str, Any]:

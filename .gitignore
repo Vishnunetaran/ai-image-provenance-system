@@ -69,3 +69,4 @@ htmlcov/
 # Temporary files
 *.tmp
 temp/
+.claude/

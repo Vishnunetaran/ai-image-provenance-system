@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PROVENA — Cryptographic provenance for AI images</title>
+    <title>PROVENA — Forensic provenance for AI images</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -12,9 +12,11 @@
             --bg: #0a0a0a;
             --bg-elev: #111111;
             --bg-card: #141414;
+            --bg-card-2: #181818;
             --accent: #ff2d2d;
             --accent-hover: #ff4747;
             --accent-dim: rgba(255, 45, 45, 0.12);
+            --accent-glow: rgba(255, 45, 45, 0.4);
             --text: #fafafa;
             --text-muted: #8a8a8a;
             --text-faint: #4a4a4a;
@@ -23,18 +25,11 @@
             --success: #4ade80;
             --warning: #fbbf24;
             --danger: var(--accent);
+            --max: 1280px;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg);
@@ -43,32 +38,29 @@
             line-height: 1.5;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden;
         }
-
-        .mono {
-            font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
-        }
+        .mono { font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace; }
+        .accent { color: var(--accent); }
 
         /* ============ HEADER ============ */
         .site-header {
             position: sticky;
             top: 0;
             z-index: 100;
-            background: rgba(10, 10, 10, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            background: rgba(10, 10, 10, 0.82);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
             border-bottom: 1px solid var(--border);
         }
-
         .header-inner {
-            max-width: 1280px;
+            max-width: var(--max);
             margin: 0 auto;
             padding: 18px 32px;
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
-
         .wordmark {
             display: flex;
             align-items: center;
@@ -79,21 +71,22 @@
             color: var(--text);
             text-decoration: none;
         }
-
         .wordmark-dot {
-            width: 10px;
-            height: 10px;
+            width: 10px; height: 10px;
             background: var(--accent);
             border-radius: 50%;
-            box-shadow: 0 0 16px var(--accent);
+            box-shadow: 0 0 16px var(--accent-glow);
+            animation: pulse 2s ease-in-out infinite;
         }
-
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 16px var(--accent-glow); }
+            50% { box-shadow: 0 0 24px var(--accent), 0 0 4px var(--accent); }
+        }
         .header-nav {
             display: flex;
             align-items: center;
             gap: 28px;
         }
-
         .header-nav a {
             color: var(--text-muted);
             text-decoration: none;
@@ -101,11 +94,7 @@
             font-weight: 500;
             transition: color 0.15s ease;
         }
-
-        .header-nav a:hover {
-            color: var(--text);
-        }
-
+        .header-nav a:hover { color: var(--text); }
         .header-cta {
             background: var(--accent);
             color: white;
@@ -115,22 +104,29 @@
             text-decoration: none;
             border: none;
             cursor: pointer;
-            transition: background 0.15s ease, transform 0.15s ease;
-            font-family: inherit;
+            transition: background 0.15s ease;
         }
-
-        .header-cta:hover {
-            background: var(--accent-hover);
-        }
+        .header-cta:hover { background: var(--accent-hover); }
 
         /* ============ HERO ============ */
         .hero {
-            max-width: 1280px;
+            max-width: var(--max);
             margin: 0 auto;
-            padding: 96px 32px 64px;
+            padding: 112px 32px 80px;
+            position: relative;
         }
-
-        .hero-eyebrow {
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 60px;
+            right: 32px;
+            width: 320px;
+            height: 320px;
+            background: radial-gradient(circle at center, var(--accent-dim) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: -1;
+        }
+        .eyebrow {
             display: inline-flex;
             align-items: center;
             gap: 10px;
@@ -142,44 +138,35 @@
             margin-bottom: 32px;
             letter-spacing: 0.02em;
         }
-
-        .hero-eyebrow::before {
+        .eyebrow::before {
             content: '';
-            width: 6px;
-            height: 6px;
+            width: 6px; height: 6px;
             background: var(--accent);
             border-radius: 50%;
             box-shadow: 0 0 8px var(--accent);
         }
-
         .hero-title {
-            font-size: clamp(2.8rem, 7vw, 5.8rem);
+            font-size: clamp(2.8rem, 7.5vw, 6rem);
             font-weight: 900;
-            line-height: 0.98;
-            letter-spacing: -0.035em;
+            line-height: 0.96;
+            letter-spacing: -0.038em;
             margin-bottom: 28px;
             max-width: 14ch;
         }
-
-        .hero-title .accent {
-            color: var(--accent);
-        }
-
         .hero-sub {
-            font-size: clamp(1.05rem, 1.6vw, 1.3rem);
+            font-size: clamp(1.05rem, 1.5vw, 1.3rem);
             color: var(--text-muted);
-            max-width: 60ch;
+            max-width: 62ch;
             margin-bottom: 44px;
             line-height: 1.55;
         }
-
-        .hero-cta-row {
+        .hero-sub strong { color: var(--text); font-weight: 600; }
+        .cta-row {
             display: flex;
             align-items: center;
             gap: 16px;
             flex-wrap: wrap;
         }
-
         .btn-primary-lg {
             background: var(--accent);
             color: white;
@@ -195,20 +182,9 @@
             transition: background 0.15s ease, transform 0.15s ease;
             font-family: inherit;
         }
-
-        .btn-primary-lg:hover {
-            background: var(--accent-hover);
-            transform: translateY(-1px);
-        }
-
-        .btn-primary-lg .arrow {
-            transition: transform 0.2s ease;
-        }
-
-        .btn-primary-lg:hover .arrow {
-            transform: translateX(4px);
-        }
-
+        .btn-primary-lg:hover { background: var(--accent-hover); transform: translateY(-1px); }
+        .btn-primary-lg .arrow { transition: transform 0.2s ease; }
+        .btn-primary-lg:hover .arrow { transform: translateX(4px); }
         .btn-ghost-lg {
             background: transparent;
             color: var(--text);
@@ -224,102 +200,436 @@
             transition: border-color 0.15s ease, background 0.15s ease;
             font-family: inherit;
         }
+        .btn-ghost-lg:hover { border-color: var(--accent); background: var(--accent-dim); }
 
-        .btn-ghost-lg:hover {
-            border-color: var(--accent);
-            background: var(--accent-dim);
-        }
-
-        /* ============ FEATURES STRIP ============ */
-        .features {
-            max-width: 1280px;
+        /* ============ STAT STRIP ============ */
+        .stat-strip {
+            max-width: var(--max);
             margin: 0 auto;
-            padding: 64px 32px;
+            padding: 56px 32px;
             border-top: 1px solid var(--border);
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 32px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 0;
+            background: linear-gradient(180deg, var(--bg) 0%, var(--bg-elev) 100%);
         }
-
-        .feature {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+        .stat {
+            padding: 8px 24px;
+            border-left: 1px solid var(--border);
         }
-
-        .feature-num {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem;
+        .stat:first-child { border-left: none; }
+        .stat-num {
+            font-size: clamp(2rem, 3.5vw, 2.6rem);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            color: var(--text);
+            line-height: 1;
+        }
+        .stat-num .unit {
             color: var(--accent);
-            font-weight: 700;
+            font-size: 0.7em;
+            margin-left: 2px;
         }
-
-        .feature-title {
-            font-size: 1.1rem;
-            font-weight: 700;
-        }
-
-        .feature-desc {
+        .stat-label {
+            margin-top: 10px;
+            font-size: 0.78rem;
             color: var(--text-muted);
-            font-size: 0.92rem;
-            line-height: 1.55;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
         }
 
-        /* ============ DIVIDER ============ */
-        .section-divider {
-            max-width: 1280px;
-            margin: 64px auto 0;
-            padding: 0 32px;
-        }
-
-        .section-divider-inner {
+        /* ============ SECTION SHELL ============ */
+        .section {
+            max-width: var(--max);
+            margin: 0 auto;
+            padding: 96px 32px;
             border-top: 1px solid var(--border);
-            padding-top: 48px;
+        }
+        .section-header {
             display: flex;
             align-items: baseline;
             justify-content: space-between;
             flex-wrap: wrap;
-            gap: 16px;
+            gap: 24px;
+            margin-bottom: 56px;
         }
-
         .section-label {
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.78rem;
             color: var(--accent);
             font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+        .section-title {
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            line-height: 1.05;
+            max-width: 18ch;
+        }
+        .section-lede {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            line-height: 1.55;
+            max-width: 42ch;
+        }
+
+        /* ============ PROBLEM ============ */
+        .problem-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+        }
+        .problem-card {
+            background: var(--bg-elev);
+            padding: 32px;
+        }
+        .problem-card h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .problem-card h3::before {
+            content: '✗';
+            color: var(--accent);
+            font-size: 1.2rem;
+            font-weight: 900;
+        }
+        .problem-card p {
+            color: var(--text-muted);
+            font-size: 0.93rem;
+            line-height: 1.6;
+        }
+        .problem-card cite {
+            display: block;
+            margin-top: 12px;
+            color: var(--text-faint);
+            font-size: 0.78rem;
+            font-style: normal;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* ============ FLOW (How it works) ============ */
+        .flow-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+        .flow-step {
+            border: 1px solid var(--border);
+            background: var(--bg-elev);
+            padding: 28px;
+            position: relative;
+        }
+        .flow-step-num {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: 0.08em;
+            margin-bottom: 16px;
+        }
+        .flow-step h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            letter-spacing: -0.01em;
+        }
+        .flow-step p {
+            color: var(--text-muted);
+            font-size: 0.92rem;
+            line-height: 1.6;
+        }
+        .flow-step code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-card);
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-size: 0.85em;
+            color: var(--text);
+        }
+
+        /* ============ SIGNALS ============ */
+        .signal-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+        }
+        .signal-card {
+            background: var(--bg-elev);
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: background 0.15s ease;
+        }
+        .signal-card:hover { background: var(--bg-card-2); }
+        .signal-card.novel {
+            background: linear-gradient(135deg, var(--bg-elev) 0%, rgba(255, 45, 45, 0.06) 100%);
+            border-top: 2px solid var(--accent);
+        }
+        .signal-num {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            color: var(--accent);
+            font-weight: 700;
+            letter-spacing: 0.06em;
+        }
+        .signal-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .signal-card.novel .signal-name::after {
+            content: 'NOVEL';
+            margin-left: 10px;
+            padding: 2px 8px;
+            font-size: 0.62rem;
+            background: var(--accent);
+            color: white;
+            border-radius: 3px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            vertical-align: middle;
+        }
+        .signal-desc {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.55;
+        }
+
+        /* ============ ECHO ============ */
+        .echo-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+            gap: 48px;
+            align-items: start;
+        }
+        @media (max-width: 880px) {
+            .echo-grid { grid-template-columns: 1fr; gap: 32px; }
+        }
+        .echo-text h3 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 18px;
+            letter-spacing: -0.015em;
+        }
+        .echo-text p {
+            color: var(--text-muted);
+            font-size: 1rem;
+            line-height: 1.65;
+            margin-bottom: 18px;
+        }
+        .echo-text p strong { color: var(--text); font-weight: 600; }
+        .echo-vector {
+            background: var(--bg-elev);
+            border: 1px solid var(--border);
+            padding: 24px;
+        }
+        .echo-vector-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            color: var(--accent);
             letter-spacing: 0.08em;
             text-transform: uppercase;
+            margin-bottom: 16px;
+            font-weight: 700;
+        }
+        .echo-vector ul {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .echo-vector li {
+            display: grid;
+            grid-template-columns: minmax(160px, auto) 1fr;
+            gap: 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed var(--border);
+            font-size: 0.88rem;
+        }
+        .echo-vector li:last-child { border-bottom: none; padding-bottom: 0; }
+        .echo-vector .key {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text);
+            font-weight: 600;
+        }
+        .echo-vector .desc { color: var(--text-muted); }
+
+        .echo-formula {
+            margin-top: 28px;
+            background: #050505;
+            border: 1px solid var(--border);
+            padding: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            line-height: 1.7;
+            color: var(--text);
+        }
+        .echo-formula .lbl { color: var(--accent); }
+        .echo-formula .cm { color: var(--text-faint); }
+
+        /* ============ VALIDATION TABLE ============ */
+        .validation-wrap { margin-top: 56px; }
+        .validation-wrap h3 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.015em;
+        }
+        .validation-wrap p.note {
+            color: var(--text-muted);
+            font-size: 0.93rem;
+            margin-bottom: 24px;
+        }
+        .vtable {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.92rem;
+        }
+        .vtable thead th {
+            text-align: left;
+            padding: 14px 18px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            background: var(--bg-elev);
+            border: 1px solid var(--border);
+        }
+        .vtable tbody td {
+            padding: 14px 18px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+        }
+        .vtable .score {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 1.05rem;
+        }
+        .vtable .score.high { color: var(--success); }
+        .vtable .score.mid { color: var(--warning); }
+        .vtable .score.low { color: var(--text-muted); }
+        .vtable .kind {
+            display: inline-block;
+            padding: 3px 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            background: var(--bg-card);
+            color: var(--text-muted);
+            border: 1px solid var(--border-strong);
+        }
+        .vtable .kind.same { color: var(--success); border-color: rgba(74,222,128,0.3); }
+        .vtable .kind.diff { color: var(--accent); border-color: rgba(255,45,45,0.3); }
+
+        /* ============ LIMITS ============ */
+        .limits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+        .limit-card {
+            background: var(--bg-elev);
+            border: 1px solid var(--border);
+            padding: 24px;
+            border-left: 3px solid var(--accent);
+        }
+        .limit-card h4 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--text);
+        }
+        .limit-card p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
         }
 
-        .section-headline {
-            font-size: clamp(1.8rem, 3.5vw, 2.6rem);
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            line-height: 1.05;
+        /* ============ ROADMAP ============ */
+        .roadmap-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+        .roadmap-card {
+            background: var(--bg-elev);
+            border: 1px solid var(--border);
+            padding: 28px;
+            position: relative;
+            transition: border-color 0.2s ease, transform 0.2s ease;
+        }
+        .roadmap-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+        .roadmap-tag {
+            display: inline-block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--accent);
+            padding: 3px 10px;
+            border: 1px solid var(--accent);
+            letter-spacing: 0.06em;
+            margin-bottom: 18px;
+        }
+        .roadmap-card h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            letter-spacing: -0.01em;
+        }
+        .roadmap-card p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
         }
 
-        /* ============ APP SECTION ============ */
-        .app-section {
-            max-width: 1280px;
+        /* ============ DEMO SECTION ============ */
+        .demo-intro {
+            max-width: var(--max);
             margin: 0 auto;
-            padding: 48px 32px 96px;
+            padding: 72px 32px 24px;
+            border-top: 1px solid var(--border);
         }
-
+        .demo-intro-inner {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 24px;
+        }
+        .app-section {
+            max-width: var(--max);
+            margin: 0 auto;
+            padding: 16px 32px 112px;
+        }
         .app-card {
             background: var(--bg-elev);
             border: 1px solid var(--border);
             padding: 40px;
         }
-
         @media (max-width: 640px) {
             .app-card { padding: 24px; }
-            .hero { padding: 64px 24px 48px; }
+            .hero { padding: 72px 24px 56px; }
+            .section { padding: 64px 24px; }
             .header-inner { padding: 16px 20px; }
             .header-nav { gap: 16px; }
             .header-nav a:not(.header-cta) { display: none; }
         }
 
-        /* Upload */
         .upload-zone {
             border: 2px dashed var(--border-strong);
             padding: 56px 24px;
@@ -327,37 +637,17 @@
             cursor: pointer;
             transition: border-color 0.2s ease, background 0.2s ease;
         }
-
         .upload-zone:hover,
         .upload-zone.dragover {
             border-color: var(--accent);
             background: var(--accent-dim);
         }
-
-        .upload-icon {
-            font-size: 2.4rem;
-            margin-bottom: 16px;
-            opacity: 0.7;
-        }
-
-        .upload-zone h3 {
-            font-size: 1.25rem;
-            font-weight: 700;
-            margin-bottom: 6px;
-        }
-
-        .upload-zone p {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-
+        .upload-icon { font-size: 2.4rem; margin-bottom: 16px; opacity: 0.7; }
+        .upload-zone h3 { font-size: 1.25rem; font-weight: 700; margin-bottom: 6px; }
+        .upload-zone p { color: var(--text-muted); font-size: 0.9rem; }
         #fileInput { display: none; }
 
-        /* Preview */
-        .preview-section {
-            display: none;
-        }
-
+        .preview-section { display: none; }
         .preview-image {
             max-width: 100%;
             max-height: 420px;
@@ -365,14 +655,12 @@
             margin: 0 auto 24px;
             border: 1px solid var(--border);
         }
-
         .button-row {
             display: flex;
             gap: 12px;
             justify-content: center;
             flex-wrap: wrap;
         }
-
         .btn {
             padding: 12px 24px;
             border: none;
@@ -382,56 +670,33 @@
             transition: background 0.15s ease, border-color 0.15s ease;
             font-family: inherit;
         }
-
-        .btn-primary {
-            background: var(--accent);
-            color: white;
-        }
-
+        .btn-primary { background: var(--accent); color: white; }
         .btn-primary:hover { background: var(--accent-hover); }
-
         .btn-secondary {
             background: transparent;
             color: var(--text);
             border: 1px solid var(--border-strong);
         }
-
         .btn-secondary:hover { border-color: var(--text); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-        .btn:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-
-        /* Loading */
         .loading {
             display: none;
             text-align: center;
             padding: 32px;
         }
-
         .spinner {
-            width: 36px;
-            height: 36px;
+            width: 36px; height: 36px;
             border: 2px solid var(--border-strong);
             border-top-color: var(--accent);
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
             margin: 0 auto 12px;
         }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
+        @keyframes spin { to { transform: rotate(360deg); } }
         .loading p { color: var(--text-muted); font-size: 0.9rem; }
 
-        /* Results */
-        .results-section {
-            display: none;
-            margin-top: 32px;
-        }
-
+        .results-section { display: none; margin-top: 32px; }
         .alert {
             padding: 14px 18px;
             margin-bottom: 16px;
@@ -439,7 +704,6 @@
             font-size: 0.92rem;
             background: var(--bg-card);
         }
-
         .alert-success { border-color: var(--success); }
         .alert-error { border-color: var(--accent); }
 
@@ -448,24 +712,12 @@
             border: 1px solid var(--border);
             padding: 24px;
         }
-
-        .result-card h3 {
-            font-size: 1.05rem;
-            font-weight: 700;
-            margin-bottom: 16px;
-            letter-spacing: -0.01em;
-        }
-
+        .result-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 16px; letter-spacing: -0.01em; }
         .result-card h4 {
-            font-size: 0.85rem;
-            font-weight: 700;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            margin-top: 24px;
-            margin-bottom: 12px;
+            font-size: 0.85rem; font-weight: 700; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.06em;
+            margin-top: 24px; margin-bottom: 12px;
         }
-
         .status-badge {
             display: inline-block;
             padding: 6px 14px;
@@ -476,30 +728,10 @@
             text-transform: uppercase;
             margin-bottom: 16px;
         }
-
-        .status-verified {
-            background: rgba(74, 222, 128, 0.12);
-            color: var(--success);
-            border: 1px solid rgba(74, 222, 128, 0.3);
-        }
-
-        .status-tampered {
-            background: var(--accent-dim);
-            color: var(--accent);
-            border: 1px solid rgba(255, 45, 45, 0.3);
-        }
-
-        .status-suspicious {
-            background: rgba(251, 191, 36, 0.12);
-            color: var(--warning);
-            border: 1px solid rgba(251, 191, 36, 0.3);
-        }
-
-        .status-not-found {
-            background: rgba(138, 138, 138, 0.1);
-            color: var(--text-muted);
-            border: 1px solid var(--border-strong);
-        }
+        .status-verified { background: rgba(74, 222, 128, 0.12); color: var(--success); border: 1px solid rgba(74, 222, 128, 0.3); }
+        .status-tampered { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(255, 45, 45, 0.3); }
+        .status-suspicious { background: rgba(251, 191, 36, 0.12); color: var(--warning); border: 1px solid rgba(251, 191, 36, 0.3); }
+        .status-not-found { background: rgba(138, 138, 138, 0.1); color: var(--text-muted); border: 1px solid var(--border-strong); }
 
         .info-grid {
             display: grid;
@@ -509,37 +741,18 @@
             border: 1px solid var(--border);
             margin-top: 12px;
         }
-
-        .info-item {
-            background: var(--bg-elev);
-            padding: 14px 16px;
-        }
-
+        .info-item { background: var(--bg-elev); padding: 14px 16px; }
         .info-item label {
-            display: block;
-            font-size: 0.72rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            margin-bottom: 6px;
-            font-weight: 600;
+            display: block; font-size: 0.72rem; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.06em;
+            margin-bottom: 6px; font-weight: 600;
         }
-
         .info-item value {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.88rem;
-            color: var(--text);
-            font-weight: 500;
-            word-break: break-all;
+            font-size: 0.88rem; color: var(--text);
+            font-weight: 500; word-break: break-all;
         }
-
-        .action-row {
-            display: flex;
-            gap: 12px;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-
+        .action-row { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
         .json-content {
             display: none;
             background: #050505;
@@ -554,12 +767,7 @@
             max-height: 400px;
             overflow-y: auto;
         }
-
-        .report-section {
-            display: none;
-            margin-top: 20px;
-        }
-
+        .report-section { display: none; margin-top: 20px; }
         .report-content {
             background: var(--bg-card);
             border: 1px solid var(--border);
@@ -576,25 +784,36 @@
         /* ============ FOOTER ============ */
         .site-footer {
             border-top: 1px solid var(--border);
-            padding: 32px;
-            text-align: center;
-            color: var(--text-faint);
-            font-size: 0.85rem;
+            padding: 56px 32px 40px;
+            background: var(--bg-elev);
         }
-
-        .site-footer .accent { color: var(--accent); }
+        .footer-inner {
+            max-width: var(--max);
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .footer-wordmark {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--text);
+            letter-spacing: 0.04em;
+        }
+        .footer-meta { color: var(--text-faint); font-size: 0.82rem; }
+        .footer-meta a { color: var(--text-muted); text-decoration: none; }
+        .footer-meta a:hover { color: var(--accent); }
 
         /* Scroll reveal */
         .reveal {
             opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.6s ease, transform 0.6s ease;
+            transform: translateY(24px);
+            transition: opacity 0.7s ease, transform 0.7s ease;
         }
-
-        .reveal.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        .reveal.visible { opacity: 1; transform: translateY(0); }
     </style>
 </head>
 <body>
@@ -607,70 +826,343 @@
                 <span>PROVENA</span>
             </a>
             <nav class="header-nav">
-                <a href="#features">Features</a>
-                <a href="#app">App</a>
+                <a href="#how">How it works</a>
+                <a href="#signals">Receipt</a>
+                <a href="#echo">Echo Signature</a>
                 <a href="#app" class="header-cta">Try Now</a>
             </nav>
         </div>
     </header>
 
-    <!-- ============ HOME / HERO ============ -->
+    <!-- ============ HERO ============ -->
     <section class="hero" id="home">
-        <div class="hero-eyebrow mono">CRYPTOGRAPHIC PROVENANCE · RESEARCH BUILD</div>
+        <div class="eyebrow mono">CRYPTOGRAPHIC PROVENANCE · RESEARCH BUILD</div>
         <h1 class="hero-title">
             Proof of origin for <span class="accent">AI&nbsp;images.</span>
         </h1>
         <p class="hero-sub">
-            Provena establishes verifiable provenance for AI-generated images using Ed25519 digital signatures and an append-only registry, supplemented by perceptual hashing and a hybrid DWT+DCT watermark.
+            Drop in any image. Get a <strong>Photo Receipt</strong> back — a set of seven independently-verifiable signals about that image, including a novel forensic primitive that <strong>measures the processing channel</strong> the image has travelled through since registration.
         </p>
-        <div class="hero-cta-row">
-            <a href="#app" class="btn-primary-lg" id="tryNowBtn">
+        <div class="cta-row">
+            <a href="#app" class="btn-primary-lg">
                 Try Now
                 <span class="arrow">→</span>
             </a>
-            <a href="#features" class="btn-ghost-lg">How it works</a>
+            <a href="#how" class="btn-ghost-lg">How it works</a>
         </div>
     </section>
 
-    <!-- ============ FEATURES ============ -->
-    <section class="features reveal" id="features">
-        <div class="feature">
-            <span class="feature-num">01 / SIGNATURE</span>
-            <h3 class="feature-title">Ed25519 cryptography</h3>
-            <p class="feature-desc">Industry-standard elliptic-curve signatures bind metadata to every image. Tampering is detected instantly.</p>
+    <!-- ============ STATS ============ -->
+    <section class="stat-strip reveal">
+        <div class="stat">
+            <div class="stat-num">7</div>
+            <div class="stat-label">Independent signals</div>
         </div>
-        <div class="feature">
-            <span class="feature-num">02 / REGISTRY</span>
-            <h3 class="feature-title">Append-only ledger</h3>
-            <p class="feature-desc">Provenance records live in a tamper-evident SQLite ledger with a complete audit trail.</p>
+        <div class="stat">
+            <div class="stat-num">0.996</div>
+            <div class="stat-label">Cross-image similarity (same channel)</div>
         </div>
-        <div class="feature">
-            <span class="feature-num">03 / pHASH</span>
-            <h3 class="feature-title">Perceptual matching</h3>
-            <p class="feature-desc">Hamming-distance pHash matching survives compression, resizing, and minor edits.</p>
+        <div class="stat">
+            <div class="stat-num">10/10</div>
+            <div class="stat-label">Unique fingerprints over a 10-channel sweep</div>
         </div>
-        <div class="feature">
-            <span class="feature-num">04 / WATERMARK</span>
-            <h3 class="feature-title">Hybrid DWT+DCT</h3>
-            <p class="feature-desc">Imperceptible forensic trace embedded in the luminance channel, with redundancy and a sync prefix.</p>
+        <div class="stat">
+            <div class="stat-num">Ed25519</div>
+            <div class="stat-label">Signature primitive</div>
         </div>
     </section>
 
-    <!-- ============ DIVIDER ============ -->
-    <div class="section-divider">
-        <div class="section-divider-inner">
+    <!-- ============ PROBLEM ============ -->
+    <section class="section reveal" id="problem">
+        <div class="section-header">
             <div>
-                <div class="section-label">↓ Live Demo</div>
-                <h2 class="section-headline" style="margin-top: 12px;">Register or verify an image.</h2>
+                <div class="section-label">01 · The problem</div>
+                <h2 class="section-title">Every existing approach is brittle in its own way.</h2>
             </div>
-            <p style="color: var(--text-muted); max-width: 40ch;">Drop in a PNG or JPEG. Register it to mint a provenance record, or verify one you've already registered.</p>
+            <p class="section-lede">
+                AI-generated media is moving faster than the trust infrastructure around it. We surveyed the 2024–2025 state of the art before building anything.
+            </p>
+        </div>
+        <div class="problem-grid">
+            <div class="problem-card">
+                <h3>Watermarks die under diffusion</h3>
+                <p>TrustMark, SynthID, Stable Signature and VINE all decode to near-zero under guided-diffusion regeneration. Robust against compression — fragile against the next image model.</p>
+                <cite>arxiv 2510.05978 · 2511.05598 · WAVES (NSF)</cite>
+            </div>
+            <div class="problem-card">
+                <h3>C2PA dies on every re-encode</h3>
+                <p>Metadata is stripped by every social-media platform. Formal-methods analysis finds replaceable timestamps and no revocation checks. RAND: "end-to-end compliance is unrealistic in an open ecosystem."</p>
+                <cite>arxiv 2604.24890 · NSA CSI 2025</cite>
+            </div>
+            <div class="problem-card">
+                <h3>AI detectors don't generalise</h3>
+                <p>High in-distribution accuracy, poor cross-model transfer. Notable false-positive drops under simple perturbations. "No single method consistently outperforms others."</p>
+                <cite>arxiv 2511.02791 · 2505.12335</cite>
+            </div>
+            <div class="problem-card">
+                <h3>No one measures the channel</h3>
+                <p>Forensic literature on watermark bit-error patterns focuses on leak-attribution. Pixel-residual forensics need an original reference. Nothing uses the watermark itself as a forensic probe of an unknown channel.</p>
+                <cite>The gap we picked.</cite>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ HOW IT WORKS ============ -->
+    <section class="section reveal" id="how">
+        <div class="section-header">
+            <div>
+                <div class="section-label">02 · How it works</div>
+                <h2 class="section-title">Register once. Verify anywhere.</h2>
+            </div>
+            <p class="section-lede">
+                Provena stamps an image with a cryptographically-signed manifest and an invisible watermark at registration, then runs a battery of independent probes at verification time.
+            </p>
+        </div>
+        <div class="flow-grid">
+            <div class="flow-step">
+                <div class="flow-step-num">STEP 01 / REGISTER</div>
+                <h3>Sign &amp; stamp</h3>
+                <p>The image is hashed perceptually (<code>pHash</code>), the metadata is signed with <code>Ed25519</code>, and a 16-byte watermark payload is embedded into the luminance via hybrid <code>DWT+DCT</code>. The record lands in the append-only registry.</p>
+            </div>
+            <div class="flow-step">
+                <div class="flow-step-num">STEP 02 / SHARE</div>
+                <h3>Survive the wild</h3>
+                <p>The image travels through JPEG re-encodes, resizes, format conversions, social-media pipelines. Some signals survive cleanly. Some don't. The system reports what it sees — never what it wishes it saw.</p>
+            </div>
+            <div class="flow-step">
+                <div class="flow-step-num">STEP 03 / VERIFY</div>
+                <h3>Read the receipt</h3>
+                <p>On verification, every signal probes independently. The cryptographic signature is authoritative. The perceptual hash is tolerant. The watermark — and its bit-error pattern — measures the channel.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ SIGNALS ============ -->
+    <section class="section reveal" id="signals">
+        <div class="section-header">
+            <div>
+                <div class="section-label">03 · The Photo Receipt</div>
+                <h2 class="section-title">Seven signals. None of them lie.</h2>
+            </div>
+            <p class="section-lede">
+                Every signal reports <code class="mono">verified</code>, <code class="mono">found</code>, <code class="mono">absent</code>, <code class="mono">warning</code>, or <code class="mono">unknown</code> — never an invented verdict. Humans interpret.
+            </p>
+        </div>
+        <div class="signal-grid">
+            <div class="signal-card">
+                <div class="signal-num">01</div>
+                <div class="signal-name">manifest</div>
+                <p class="signal-desc">Is there a Provena/C2PA-shaped Ed25519-signed manifest in the EXIF, and does it verify against this image's perceptual hash?</p>
+            </div>
+            <div class="signal-card">
+                <div class="signal-num">02</div>
+                <div class="signal-name">watermark</div>
+                <p class="signal-desc">Did the neural watermark extract a valid payload, and does it resolve to a record in our registry?</p>
+            </div>
+            <div class="signal-card novel">
+                <div class="signal-num">03</div>
+                <div class="signal-name">edit_trace</div>
+                <p class="signal-desc">Echo Signature — a quantitative measurement of the channel the image traveled through since registration. The watermark is the probe; the error pattern is the measurement.</p>
+            </div>
+            <div class="signal-card">
+                <div class="signal-num">04</div>
+                <div class="signal-name">registry</div>
+                <p class="signal-desc">Does the image's pHash match anything in the registry — exact, near-duplicate, or absent? Hamming-distance tolerant.</p>
+            </div>
+            <div class="signal-card">
+                <div class="signal-num">05</div>
+                <div class="signal-name">exif</div>
+                <p class="signal-desc">What does the EXIF metadata say about camera, time, GPS, software, copyright?</p>
+            </div>
+            <div class="signal-card">
+                <div class="signal-num">06</div>
+                <div class="signal-name">jpeg</div>
+                <p class="signal-desc">Are the JPEG quantization tables standard (camera-direct) or custom (editor re-save)?</p>
+            </div>
+            <div class="signal-card">
+                <div class="signal-num">07</div>
+                <div class="signal-name">image</div>
+                <p class="signal-desc">Dimensions, format, color mode, file size, perceptual hash — raw facts.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ ECHO SIGNATURE ============ -->
+    <section class="section reveal" id="echo">
+        <div class="section-header">
+            <div>
+                <div class="section-label">04 · The novel contribution</div>
+                <h2 class="section-title">Echo Signature: turn the watermark inside out.</h2>
+            </div>
+            <p class="section-lede">
+                Every existing watermark system <em>corrects</em> bit errors and discards the error pattern as noise. Echo inverts the framing.
+            </p>
+        </div>
+
+        <div class="echo-grid">
+            <div class="echo-text">
+                <h3>The probe is the watermark. The measurement is the error.</h3>
+                <p>
+                    At registration, the DCT layer embeds a 48-bit payload at known coefficient positions in the green channel. At verification, we read both <strong>hard bits</strong> (0/1 thresholded decisions) and a <strong>soft signal</strong> (signed distance from the QIM decision boundary, normalized to <code class="mono">[-1, +1]</code>).
+                </p>
+                <p>
+                    Comparing the extracted hard bits to the registered payload gives a bit-error pattern. From that pattern plus the soft signal we compute a six-component <strong>Echo Vector</strong>. Each component is quantized to 8 bits and encoded directly as 12 hex characters — <strong>not</strong> SHA-256-hashed. Plain hex preserves L1 distance in feature space, so similar processing histories produce <strong>Hamming-close fingerprints</strong>. Cross-image similarity is a real semantic metric, not a hash collision rate.
+                </p>
+
+                <div class="echo-formula">
+<span class="cm"># fingerprint encoding — position-stable, L1-preserving</span>
+fingerprint = (
+  <span class="lbl">ber</span>       2x  <span class="cm">// hard-bit BER</span>
+  <span class="lbl">entropy</span>   2x  <span class="cm">// spatial Shannon entropy</span>
+  <span class="lbl">low</span>       2x  <span class="cm">// spectral low-pct</span>
+  <span class="lbl">high</span>      2x  <span class="cm">// spectral high-pct</span>
+  <span class="lbl">soft_mean</span> 2x  <span class="cm">// surviving signal strength</span>
+  <span class="lbl">soft_std</span>  2x  <span class="cm">// channel uniformity</span>
+)
+<span class="cm">// 12 hex chars · L1 distance preserved · no SHA-256</span>
+                </div>
+            </div>
+
+            <div class="echo-vector">
+                <div class="echo-vector-title">↳ Echo Vector · 6 components</div>
+                <ul>
+                    <li>
+                        <span class="key">bit_error_rate</span>
+                        <span class="desc">Hard-bit BER — channel damage magnitude</span>
+                    </li>
+                    <li>
+                        <span class="key">spatial_entropy</span>
+                        <span class="desc">Shannon entropy of error positions across a 4×4 image grid (bits)</span>
+                    </li>
+                    <li>
+                        <span class="key">spectral_low_pct</span>
+                        <span class="desc">Fraction of error energy in low DCT frequencies — blur signature</span>
+                    </li>
+                    <li>
+                        <span class="key">spectral_high_pct</span>
+                        <span class="desc">Fraction in high frequencies — compression / sharpen signature</span>
+                    </li>
+                    <li>
+                        <span class="key">soft_mean_abs</span>
+                        <span class="desc">Mean |soft signal| — strength of surviving signal</span>
+                    </li>
+                    <li>
+                        <span class="key">soft_std</span>
+                        <span class="desc">Std of soft signal — mixed vs uniform channel</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- VALIDATION MATRIX -->
+        <div class="validation-wrap">
+            <h3>Validated experimentally</h3>
+            <p class="note">10/10 unique fingerprints across a 10-channel sweep. Same-channel pairs cluster across <em>different content</em>. Different-channel pairs separate. Reproducible.</p>
+            <table class="vtable">
+                <thead>
+                    <tr>
+                        <th>Comparison</th>
+                        <th>Type</th>
+                        <th>Similarity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>clean (A) vs clean (B)</td>            <td><span class="kind same">same channel</span></td><td class="score high">0.996</td></tr>
+                    <tr><td>q=75 (A) vs q=75 (B)</td>              <td><span class="kind same">same channel</span></td><td class="score high">0.982</td></tr>
+                    <tr><td>q=50 (A) vs q=50 (B)</td>              <td><span class="kind same">same channel</span></td><td class="score high">0.982</td></tr>
+                    <tr><td>blur r=3 (A) vs blur r=3 (B)</td>      <td><span class="kind same">same channel</span></td><td class="score high">0.983</td></tr>
+                    <tr><td>clean (A) vs q=75 (A)</td>             <td><span class="kind diff">different channel</span></td><td class="score low">0.536</td></tr>
+                    <tr><td>q=75 (A) vs blur r=1 (A)</td>          <td><span class="kind diff">different channel</span></td><td class="score mid">0.928</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- ============ LIMITS ============ -->
+    <section class="section reveal" id="limits">
+        <div class="section-header">
+            <div>
+                <div class="section-label">05 · Honest limits</div>
+                <h2 class="section-title">What Provena does <span class="accent">not</span> claim.</h2>
+            </div>
+            <p class="section-lede">
+                Marketing tone is for vendors. Real systems disclose where they break.
+            </p>
+        </div>
+        <div class="limits-grid">
+            <div class="limit-card">
+                <h4>Not C2PA-compliant</h4>
+                <p>Provena emits C2PA-<em>shaped</em> JSON with an Ed25519 signature, not output from the official <code>c2pa-python</code> SDK. Real C2PA verifiers will not accept these manifests.</p>
+            </div>
+            <div class="limit-card">
+                <h4>Not an AI-image detector</h4>
+                <p>Classifier-based detectors don't generalise across models. Provena measures provenance and channel, not "is this image AI."</p>
+            </div>
+            <div class="limit-card">
+                <h4>Not federated</h4>
+                <p>The registry is local. Cross-attestation (the Provenance Mesh) is sketched but not built. There is no single source of truth across operators.</p>
+            </div>
+            <div class="limit-card">
+                <h4>Not a verdict engine</h4>
+                <p>The heuristic forensic analyzer false-positives on every natural image and is disabled. Each signal reports independently; the human reads the receipt.</p>
+            </div>
+            <div class="limit-card">
+                <h4>DCT layer is fragile by design</h4>
+                <p>Coefficient (4,3) saturates between JPEG q≈75 and q≈30 — and that's the point. The fragility is what makes the layer a useful <em>channel probe</em> for Echo Signature.</p>
+            </div>
+            <div class="limit-card">
+                <h4>Echo needs ground truth</h4>
+                <p>The Echo primitive requires the canonical registered payload. On unregistered images, <code>edit_trace</code> correctly reports <code class="mono">absent</code>.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ ROADMAP ============ -->
+    <section class="section reveal" id="roadmap">
+        <div class="section-header">
+            <div>
+                <div class="section-label">06 · What's next</div>
+                <h2 class="section-title">Open threads we're chasing.</h2>
+            </div>
+            <p class="section-lede">
+                The Photo Receipt and Echo Signature are shipping today. Three meaningful gaps remain.
+            </p>
+        </div>
+        <div class="roadmap-grid">
+            <div class="roadmap-card">
+                <span class="roadmap-tag">PHASE 2</span>
+                <h3>Provenance Mesh</h3>
+                <p>Federated cross-attestation via daily Merkle roots. Closes the C2PA single-source-of-truth gap. Needs a multi-node demo before it ships.</p>
+            </div>
+            <div class="roadmap-card">
+                <span class="roadmap-tag">PHASE 2</span>
+                <h3>Real C2PA SDK</h3>
+                <p>Swap our custom JSON-with-signature for <code>c2pa-python</code> manifests so the system interoperates with the broader content-credentials ecosystem.</p>
+            </div>
+            <div class="roadmap-card">
+                <span class="roadmap-tag">PHASE 3</span>
+                <h3>Echo classifier</h3>
+                <p>Train a small logistic regression over the Echo Vector to map quantitative features (BER, entropy, spectral, soft moments) to edit-type labels (<code>jpeg-q-N</code>, <code>blur-r-N</code>, <code>crop-X%</code>).</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ DEMO INTRO ============ -->
+    <div class="demo-intro reveal">
+        <div class="demo-intro-inner">
+            <div>
+                <div class="section-label">↓ Live demo</div>
+                <h2 class="section-title" style="margin-top: 14px;">Register or verify an image.</h2>
+            </div>
+            <p class="section-lede">
+                Drop in a PNG or JPEG. Register it to mint a provenance record, or verify one you've already registered.
+            </p>
         </div>
     </div>
 
     <!-- ============ APP ============ -->
     <section class="app-section" id="app">
         <div class="app-card">
-            <!-- Upload -->
             <div class="upload-zone" id="uploadSection">
                 <div class="upload-icon">↑</div>
                 <h3>Upload an image</h3>
@@ -678,7 +1170,6 @@
                 <input type="file" id="fileInput" accept="image/*">
             </div>
 
-            <!-- Preview -->
             <div class="preview-section" id="previewSection">
                 <img id="previewImage" class="preview-image" alt="Preview">
                 <div class="button-row">
@@ -688,13 +1179,11 @@
                 </div>
             </div>
 
-            <!-- Loading -->
             <div class="loading" id="loading">
                 <div class="spinner"></div>
                 <p>Processing…</p>
             </div>
 
-            <!-- Results -->
             <div class="results-section" id="resultsSection">
                 <div id="alertContainer"></div>
 
@@ -719,7 +1208,12 @@
 
     <!-- ============ FOOTER ============ -->
     <footer class="site-footer">
-        <span class="mono">PROVENA</span> <span class="accent">·</span> research implementation · cryptographic provenance for AI-generated images
+        <div class="footer-inner">
+            <div class="footer-wordmark">PROVENA <span class="accent">·</span> research build</div>
+            <div class="footer-meta">
+                Cryptographic provenance &amp; channel measurement for AI-generated images.
+            </div>
+        </div>
     </footer>
 
     <script>
@@ -751,18 +1245,14 @@
             e.preventDefault();
             uploadSection.classList.add('dragover');
         });
-
         uploadSection.addEventListener('dragleave', () => {
             uploadSection.classList.remove('dragover');
         });
-
         uploadSection.addEventListener('drop', (e) => {
             e.preventDefault();
             uploadSection.classList.remove('dragover');
             const file = e.dataTransfer.files[0];
-            if (file && file.type.startsWith('image/')) {
-                handleFile(file);
-            }
+            if (file && file.type.startsWith('image/')) handleFile(file);
         });
 
         fileInput.addEventListener('change', (e) => {
@@ -803,7 +1293,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         image: currentImageData,
-                        model_id: 'demo-model-v1',
+                        model_id: 'demo-' + new Date().toISOString(),
                         timestamp: new Date().toISOString()
                     })
                 });
@@ -993,7 +1483,7 @@
             if (data.image_id) reportBtn.style.display = 'inline-block';
         }
 
-        // Scroll reveal for the features section
+        // Scroll reveal
         const revealObserver = new IntersectionObserver((entries) => {
             entries.forEach((entry) => {
                 if (entry.isIntersecting) {
@@ -1001,8 +1491,7 @@
                     revealObserver.unobserve(entry.target);
                 }
             });
-        }, { threshold: 0.15 });
-
+        }, { threshold: 0.1 });
         document.querySelectorAll('.reveal').forEach((el) => revealObserver.observe(el));
     </script>
 </body>

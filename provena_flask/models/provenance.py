@@ -339,30 +339,59 @@ class ProvenanceDatabase:
             
             return [dict(row) for row in rows]
     
-    def search_by_perceptual_hash(self, perceptual_hash: str) -> list[dict]:
+    def search_by_perceptual_hash(self, perceptual_hash: str, max_distance: int = 0) -> list[dict]:
         """
-        Search records by perceptual hash (for tolerant matching).
-        
+        Search records by perceptual hash.
+
+        Perceptual hashes are designed for tolerant matching — two visually
+        similar images produce nearby (but not equal) hashes. A `max_distance`
+        of 0 falls back to an exact-equality SQL lookup; any positive value
+        scans the table and filters by Hamming distance on the hex hash.
+
         Args:
-            perceptual_hash: Perceptual hash string
-        
+            perceptual_hash: Perceptual hash string (hex)
+            max_distance: Maximum Hamming distance (in bits) to accept.
+                          0 = exact match (fast path).
+
         Returns:
-            list[dict]: Matching records
+            list[dict]: Matching records, sorted by ascending Hamming distance
+                        when max_distance > 0.
         """
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            
-            cursor.execute(
-                "SELECT * FROM provenance_records WHERE perceptual_hash = ?",
-                (perceptual_hash,)
-            )
-            
+
+            if max_distance <= 0:
+                cursor.execute(
+                    "SELECT * FROM provenance_records WHERE perceptual_hash = ?",
+                    (perceptual_hash,)
+                )
+            else:
+                cursor.execute("SELECT * FROM provenance_records")
+
             rows = cursor.fetchall()
-            
             self._log_audit(conn, 'SEARCH', details=f"perceptual_hash={perceptual_hash[:16]}...")
             conn.commit()
-            
-            return [dict(row) for row in rows]
+
+        records = [dict(row) for row in rows]
+
+        if max_distance > 0:
+            try:
+                target = int(perceptual_hash, 16)
+            except ValueError:
+                return []
+            scored = []
+            for r in records:
+                try:
+                    other = int(r['perceptual_hash'], 16)
+                except (ValueError, TypeError):
+                    continue
+                distance = bin(target ^ other).count('1')
+                if distance <= max_distance:
+                    scored.append((distance, r))
+            scored.sort(key=lambda t: t[0])
+            return [r for _, r in scored]
+
+        return records
     
     def get_audit_log(self, limit: int = 100) -> list[dict]:
         """

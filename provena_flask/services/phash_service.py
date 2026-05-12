@@ -78,19 +78,23 @@ class PerceptualHashService:
         else:
             gray = image
         
-        # Resize to (hash_size+1) x (hash_size+1)
-        # Extra pixel for DCT
-        resized = cv2.resize(gray, (hash_size + 1, hash_size + 1), interpolation=cv2.INTER_AREA)
-        
+        # Standard pHash recipe: resize to 4 * hash_size (even), then DCT.
+        # cv2.dct requires even-dimensioned inputs (OpenCV 4.13+ enforces this
+        # strictly), so we use a 32x32 working size for the default 8-bit hash
+        # and keep the top-left low-frequency block.
+        dct_size = hash_size * 4
+        resized = cv2.resize(gray, (dct_size, dct_size), interpolation=cv2.INTER_AREA)
+
         # Convert to float
         resized_float = resized.astype(np.float32)
-        
+
         # Compute DCT (Discrete Cosine Transform)
         dct = cv2.dct(resized_float)
-        
+
         # Extract top-left hash_size x hash_size coefficients
-        # (low frequencies, most important for perceptual similarity)
-        dct_low = dct[:hash_size, :hash_size]
+        # (low frequencies, most important for perceptual similarity).
+        # Skip the DC component (dct[0,0]) by taking [1:hash_size+1, 1:hash_size+1].
+        dct_low = dct[1:hash_size + 1, 1:hash_size + 1]
         
         # Compute median
         median = np.median(dct_low)
