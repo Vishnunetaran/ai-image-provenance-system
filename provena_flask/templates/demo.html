@@ -767,19 +767,309 @@
             max-height: 400px;
             overflow-y: auto;
         }
-        .report-section { display: none; margin-top: 20px; }
+        .report-section { display: none; margin-top: 24px; }
         .report-content {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            padding: 20px;
-            white-space: pre-wrap;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.82rem;
-            line-height: 1.6;
-            max-height: 520px;
-            overflow-y: auto;
+            background: transparent;
             color: var(--text);
         }
+        /* Forensic report — rich card layout */
+        .freport {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+        .freport-head {
+            padding: 28px 28px 24px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-elev) 100%);
+        }
+        .freport-head .label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--accent);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+            font-weight: 700;
+        }
+        .freport-verdict-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            gap: 32px;
+        }
+        .freport-verdict {
+            font-size: clamp(1.5rem, 3vw, 2.2rem);
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            line-height: 1.05;
+        }
+        .freport-verdict .qualifier {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 500;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-top: 8px;
+        }
+        .freport-verdict.v-good { color: var(--success); }
+        .freport-verdict.v-warn { color: var(--warning); }
+        .freport-verdict.v-bad  { color: var(--accent); }
+        .freport-verdict.v-grey { color: var(--text-muted); }
+        .freport-conf {
+            text-align: right;
+        }
+        .freport-conf-meter {
+            width: 120px;
+            height: 8px;
+            background: var(--border);
+            position: relative;
+            overflow: hidden;
+            margin-left: auto;
+        }
+        .freport-conf-bar {
+            position: absolute;
+            top: 0; left: 0; height: 100%;
+            background: linear-gradient(90deg, var(--accent) 0%, var(--accent-hover) 100%);
+            transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .freport-conf-bar.good { background: linear-gradient(90deg, var(--success) 0%, #86efac 100%); }
+        .freport-conf-bar.warn { background: linear-gradient(90deg, var(--warning) 0%, #fcd34d 100%); }
+        .freport-conf-pct {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.6rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 6px;
+        }
+        .freport-conf-lbl {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 6px;
+        }
+
+        .freport-meaning {
+            padding: 22px 28px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-elev);
+            font-size: 0.96rem;
+            color: var(--text);
+            line-height: 1.6;
+        }
+        .freport-meaning strong { color: var(--text); font-weight: 600; }
+
+        .freport-body { padding: 28px; }
+        .freport-h {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+            font-weight: 700;
+        }
+
+        .evidence-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+            margin-bottom: 28px;
+        }
+        .evidence-tile {
+            background: var(--bg-elev);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .evidence-icon {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.4rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .evidence-icon.pass { color: var(--success); }
+        .evidence-icon.fail { color: var(--accent); }
+        .evidence-icon.skip { color: var(--text-muted); }
+        .evidence-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .evidence-status {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+        .evidence-status.pass { color: var(--success); }
+        .evidence-status.fail { color: var(--accent); }
+        .evidence-status.skip { color: var(--text-muted); }
+        .evidence-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .freport-prov {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+            margin-bottom: 28px;
+        }
+        .freport-prov-item { background: var(--bg-elev); padding: 14px 16px; }
+        .freport-prov-item label {
+            display: block;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+        .freport-prov-item .v {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.86rem;
+            color: var(--text);
+            word-break: break-all;
+        }
+
+        .freport-limits ul {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .freport-limits li {
+            padding-left: 22px;
+            position: relative;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.55;
+        }
+        .freport-limits li::before {
+            content: '⊘';
+            position: absolute;
+            left: 0;
+            top: 0;
+            color: var(--accent);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .freport-raw-toggle {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+        .freport-raw {
+            display: none;
+            background: #050505;
+            border: 1px solid var(--border);
+            color: #cbd5e1;
+            padding: 18px;
+            margin-top: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            line-height: 1.55;
+            max-height: 360px;
+            overflow: auto;
+            white-space: pre-wrap;
+        }
+
+        /* ============ "BEHIND THE CURTAIN" SECTION ============ */
+        .curtain-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 28px;
+        }
+        .curtain-card {
+            background: var(--bg-elev);
+            border: 1px solid var(--border);
+            padding: 32px;
+            position: relative;
+        }
+        .curtain-card .tag {
+            display: inline-block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--accent);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            font-weight: 700;
+            margin-bottom: 14px;
+            padding: 3px 10px;
+            border: 1px solid var(--accent);
+        }
+        .curtain-card h3 {
+            font-size: 1.35rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: -0.015em;
+            line-height: 1.2;
+        }
+        .curtain-card .analogy {
+            color: var(--text);
+            font-size: 0.96rem;
+            line-height: 1.65;
+            margin-bottom: 20px;
+            padding-left: 14px;
+            border-left: 3px solid var(--accent);
+        }
+        .curtain-card p {
+            color: var(--text-muted);
+            font-size: 0.92rem;
+            line-height: 1.65;
+            margin-bottom: 14px;
+        }
+        .curtain-card p strong { color: var(--text); font-weight: 600; }
+        .curtain-card code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-card);
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-size: 0.85em;
+            color: var(--text);
+        }
+        .curtain-card ol {
+            margin: 16px 0 16px 22px;
+            color: var(--text-muted);
+            font-size: 0.92rem;
+            line-height: 1.65;
+        }
+        .curtain-card ol li { margin-bottom: 8px; }
+        .compare-table {
+            margin-top: 12px;
+            width: 100%;
+            font-size: 0.88rem;
+            border-collapse: collapse;
+        }
+        .compare-table th, .compare-table td {
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            text-align: left;
+        }
+        .compare-table th {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            background: var(--bg-card);
+            font-weight: 700;
+        }
+        .compare-table td { color: var(--text-muted); }
+        .compare-table td.was { color: var(--text-faint); }
+        .compare-table td.now { color: var(--text); }
 
         /* ============ FOOTER ============ */
         .site-footer {
@@ -827,6 +1117,7 @@
             </a>
             <nav class="header-nav">
                 <a href="#how">How it works</a>
+                <a href="#curtain">The math</a>
                 <a href="#signals">Receipt</a>
                 <a href="#echo">Echo Signature</a>
                 <a href="#app" class="header-cta">Try Now</a>
@@ -937,11 +1228,69 @@
         </div>
     </section>
 
+    <!-- ============ BEHIND THE CURTAIN ============ -->
+    <section class="section reveal" id="curtain">
+        <div class="section-header">
+            <div>
+                <div class="section-label">03 · The math, in plain English</div>
+                <h2 class="section-title">What's actually inside the receipt?</h2>
+            </div>
+            <p class="section-lede">
+                Two ideas do most of the work. One is an old technique made resilient; one is a primitive nobody else uses this way.
+            </p>
+        </div>
+
+        <div class="curtain-grid">
+            <!-- Card 1: watermark technique -->
+            <div class="curtain-card">
+                <span class="tag">Watermarking · DWT + DCT</span>
+                <h3>Like writing on the back of the photo — except the back is invisible.</h3>
+                <div class="analogy">
+                    We don't paint marks on pixels you can see. We modify a mathematical <em>shadow</em> of the image — its frequency representation — in a way that's invisible to humans but mechanical to read back.
+                </div>
+                <p>
+                    <strong>The embed.</strong> Convert the image into <em>frequency bands</em> using a <code>DWT</code> (Discrete Wavelet Transform). Watermarking lives in the mid-frequency horizontal band, where it's robust to mild compression but stays imperceptible. Inside that band, apply <code>DCT</code> — the same math that powers JPEG — on 8×8 blocks, and nudge specific mid-frequency coefficients up or down to encode 1s and 0s.
+                </p>
+                <p>
+                    <strong>The extract.</strong> Run the same math forward on the suspect image and read back those specific coefficients. A 16-bit <em>sync pattern</em> tells the decoder where the payload begins (so it can absorb a small shift), and every bit is embedded in <strong>5 places</strong> with majority voting to tolerate noise. Quality after embedding: <code>PSNR ≥ 45 dB</code>, <code>SSIM ≥ 0.99</code> — visually unchanged.
+                </p>
+                <p style="color: var(--text-faint); font-size: 0.85rem; margin-top: 18px;">
+                    What it survives: JPEG q≥75, ±10% resize, basic format conversion. What it doesn't: heavy compression (q&lt;50), cropping, rotation, aggressive filters. When it fails, the cryptographic signature still proves origin — the watermark is supplementary.
+                </p>
+            </div>
+
+            <!-- Card 2: Echo Signature -->
+            <div class="curtain-card">
+                <span class="tag">Echo Signature · novel</span>
+                <h3>Most watermarks just check if they're still there. We measure <span class="accent">how</span> they changed.</h3>
+                <div class="analogy">
+                    Think of our watermark as a <strong>tuning fork</strong>. At registration we strike it. At verification we don't just listen for "is the tuning fork still ringing?" — we listen carefully to <em>how</em> it rings. A clean image gives a clean tone. JPEG compression muffles it. Heavy filtering scrambles it. The pattern of changes <strong>is the fingerprint of the journey the image took</strong>.
+                </div>
+                <p>
+                    Every existing watermark system (TrustMark, SynthID, Stable Signature) <em>corrects</em> bit errors as fast as possible and discards the error pattern as noise. Echo treats the error pattern as the <strong>signal</strong>. The watermark is the probe; the bit-error pattern measures the channel.
+                </p>
+                <p>
+                    Concretely: we read both the hard 0/1 decisions <em>and</em> the soft signed distance from the decision boundary. From those we compute a 6-component <code>Echo Vector</code> (BER, spatial entropy, spectral low/high, soft mean, soft std), quantize each component to 8 bits, and encode the result as 12 hex characters — <strong>not</strong> SHA-256-hashed. Plain hex preserves L1 distance: similar processing histories produce Hamming-close fingerprints, even on totally different images.
+                </p>
+
+                <table class="compare-table">
+                    <thead><tr><th>Old way</th><th>Echo</th></tr></thead>
+                    <tbody>
+                        <tr><td class="was">Did the watermark survive? (yes / no)</td><td class="now">How did it change? (6-D vector)</td></tr>
+                        <tr><td class="was">Error pattern = noise, discarded</td><td class="now">Error pattern = signal, kept</td></tr>
+                        <tr><td class="was">Per-image, no comparison across images</td><td class="now">Same channel ⇒ similar fingerprint across content</td></tr>
+                        <tr><td class="was">Hash output (collision-only similarity)</td><td class="now">Plain hex (L1-distance preserved)</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
     <!-- ============ SIGNALS ============ -->
     <section class="section reveal" id="signals">
         <div class="section-header">
             <div>
-                <div class="section-label">03 · The Photo Receipt</div>
+                <div class="section-label">04 · The Photo Receipt</div>
                 <h2 class="section-title">Seven signals. None of them lie.</h2>
             </div>
             <p class="section-lede">
@@ -991,7 +1340,7 @@
     <section class="section reveal" id="echo">
         <div class="section-header">
             <div>
-                <div class="section-label">04 · The novel contribution</div>
+                <div class="section-label">05 · The novel contribution</div>
                 <h2 class="section-title">Echo Signature: turn the watermark inside out.</h2>
             </div>
             <p class="section-lede">
@@ -1082,7 +1431,7 @@ fingerprint = (
     <section class="section reveal" id="limits">
         <div class="section-header">
             <div>
-                <div class="section-label">05 · Honest limits</div>
+                <div class="section-label">06 · Honest limits</div>
                 <h2 class="section-title">What Provena does <span class="accent">not</span> claim.</h2>
             </div>
             <p class="section-lede">
@@ -1121,7 +1470,7 @@ fingerprint = (
     <section class="section reveal" id="roadmap">
         <div class="section-header">
             <div>
-                <div class="section-label">06 · What's next</div>
+                <div class="section-label">07 · What's next</div>
                 <h2 class="section-title">Open threads we're chasing.</h2>
             </div>
             <p class="section-lede">
@@ -1199,7 +1548,6 @@ fingerprint = (
                 </div>
 
                 <div class="report-section" id="reportSection">
-                    <h3 style="margin-bottom: 12px;">Forensic Report</h3>
                     <div class="report-content" id="reportContent"></div>
                 </div>
             </div>
@@ -1357,20 +1705,207 @@ fingerprint = (
             if (!currentImageId) return;
             showLoading(true);
             try {
-                const response = await fetch(`/api/v1/report/${currentImageId}?format=text`);
-                const text = await response.text();
-                if (response.ok) {
-                    reportContent.textContent = text;
-                    reportSection.style.display = 'block';
-                } else {
+                const response = await fetch(`/api/v1/report/${currentImageId}`);
+                if (!response.ok) {
                     showError('Failed to load report.');
+                    return;
                 }
+                const data = await response.json();
+                renderForensicReport(data);
+                reportSection.style.display = 'block';
+                // Smooth-scroll the report into view
+                reportSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
             } catch (error) {
                 showError('Network error: ' + error.message);
             } finally {
                 showLoading(false);
             }
         });
+
+        // -------- Forensic report renderer (layman-friendly) --------
+        const VERDICT_LABELS = {
+            authentic:        { title: 'Authentic',         qualifier: 'All checks passed',                tone: 'good' },
+            verified:         { title: 'Verified',          qualifier: 'All checks passed',                tone: 'good' },
+            verified_modified:{ title: 'Verified · Modified',qualifier: 'Same image, lightly transformed', tone: 'good' },
+            likely_authentic: { title: 'Likely Authentic',  qualifier: 'Signature is valid · some checks skipped', tone: 'warn' },
+            suspicious:       { title: 'Suspicious',        qualifier: 'Evidence is mixed',                tone: 'warn' },
+            tampered:         { title: 'Tampered',          qualifier: 'Signature did not verify',         tone: 'bad'  },
+            not_found:        { title: 'Not Found',         qualifier: 'No record of this image',          tone: 'grey' },
+        };
+
+        const VERDICT_MEANINGS = {
+            authentic:         'Every check passed. The cryptographic seal is valid, the image still matches the registered version visually, and our invisible watermark is detectable. As strong a confirmation as Provena can give.',
+            verified:          'Every check passed. The cryptographic seal is valid, the image still matches the registered version visually, and our invisible watermark is detectable.',
+            verified_modified: "The cryptographic seal is valid and the image still looks like the registered version. The invisible watermark didn't survive — that's normal after JPEG compression, resizing, or format conversion. The cryptographic proof is what counts; the watermark is supplementary.",
+            likely_authentic:  "The cryptographic seal is valid — so we trust the metadata bound to this record. Some other forensic checks were skipped or didn't have enough data to make a call. Usually this means the report was fetched for a record without re-inspecting the image.",
+            suspicious:        'Some checks succeeded and some failed in a way we cannot reconcile. Manual review is recommended.',
+            tampered:          'The cryptographic seal failed verification. The metadata associated with this image has been altered, or the wrong public key is being used.',
+            not_found:         "We have no record of this image in the registry. We cannot make any claim about its origin.",
+        };
+
+        const CHECK_FRIENDLY = {
+            'Cryptographic Signature': {
+                friendly: 'Digital seal',
+                pass: 'The signature on this record is valid. The recorded metadata has not been altered.',
+                fail: 'The signature failed to verify. Either the metadata was changed, or the wrong key is being used.',
+                skip: "The signature wasn't checked for this report.",
+            },
+            'Invisible Watermark': {
+                friendly: 'Invisible watermark',
+                pass: 'Our hidden watermark was detected in the image — strong evidence the image came from this system.',
+                fail: 'The watermark could not be extracted. This is common after JPEG re-encoding, resizing, or aggressive filtering. Cryptographic proof still applies.',
+                skip: "The watermark wasn't checked — no image was provided to this report endpoint.",
+            },
+            'Perceptual Hash Match': {
+                friendly: 'Visual match',
+                pass: "The image still looks like the registered version — tolerant to compression and minor edits.",
+                fail: "The image looks meaningfully different from the registered version. Content may have been edited.",
+                skip: "The image's visual fingerprint wasn't compared to the registered one — no image was provided.",
+            },
+        };
+
+        function _humanDate(iso) {
+            try {
+                const d = new Date(iso);
+                if (isNaN(d.getTime())) return iso;
+                return d.toLocaleString(undefined, {
+                    year: 'numeric', month: 'short', day: 'numeric',
+                    hour: 'numeric', minute: '2-digit',
+                });
+            } catch (_) { return iso; }
+        }
+
+        function _confBucket(score) {
+            if (score >= 0.85) return 'good';
+            if (score >= 0.5)  return 'warn';
+            return 'bad';
+        }
+
+        function renderForensicReport(report) {
+            const verdict = report.verdict || 'not_found';
+            const meta = VERDICT_LABELS[verdict] || VERDICT_LABELS.not_found;
+            const meaning = VERDICT_MEANINGS[verdict] || '';
+            const conf = typeof report.confidence_score === 'number' ? report.confidence_score : 0;
+            const confPct = Math.round(conf * 100);
+            const confBucket = _confBucket(conf);
+
+            const checks = (report.integrity_assessment && report.integrity_assessment.checks) || [];
+            // Make sure we surface all three buckets even when the analyser only emitted one.
+            const knownChecks = ['Cryptographic Signature', 'Invisible Watermark', 'Perceptual Hash Match'];
+            const checkByName = {};
+            checks.forEach(c => { checkByName[c.name] = c; });
+
+            const evidenceHTML = knownChecks.map(name => {
+                const friendly = CHECK_FRIENDLY[name] || { friendly: name, pass: '', fail: '', skip: '' };
+                const c = checkByName[name];
+                let icon = '?', statusKey = 'skip', desc = friendly.skip;
+                if (c) {
+                    if (c.status === 'pass') { icon = '✓'; statusKey = 'pass'; desc = friendly.pass; }
+                    else if (c.status === 'fail') { icon = '✗'; statusKey = 'fail'; desc = friendly.fail; }
+                    else { icon = '?'; statusKey = 'skip'; desc = friendly.skip; }
+                }
+                const statusText = statusKey === 'pass' ? 'Verified'
+                                : statusKey === 'fail' ? 'Failed'
+                                : 'Not tested';
+                return `
+                    <div class="evidence-tile">
+                        <div class="evidence-icon ${statusKey}">${icon}</div>
+                        <div class="evidence-name">${friendly.friendly}</div>
+                        <div class="evidence-status ${statusKey}">${statusText}</div>
+                        <div class="evidence-desc">${desc}</div>
+                    </div>
+                `;
+            }).join('');
+
+            const prov = report.provenance || {};
+            const provItems = [
+                prov.model_id     && { label: 'Model', value: prov.model_id },
+                prov.timestamp    && { label: 'Stated at', value: _humanDate(prov.timestamp) },
+                prov.registered_at&& { label: 'Registered', value: _humanDate(prov.registered_at) },
+                prov.key_id       && { label: 'Signing key', value: prov.key_id.substring(0, 16) + '…' },
+            ].filter(Boolean);
+            const provHTML = provItems.length === 0 ? '' : `
+                <div class="freport-h">Who registered it</div>
+                <div class="freport-prov">
+                    ${provItems.map(p => `
+                        <div class="freport-prov-item">
+                            <label>${p.label}</label>
+                            <div class="v">${p.value}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            // Friendly limitations (not the raw dict)
+            const limitsHTML = `
+                <div class="freport-h">Things to keep in mind</div>
+                <div class="freport-limits">
+                    <ul>
+                        <li>Provena proves <strong>origin</strong>, not <strong>authenticity</strong>. A verified record doesn't mean the image content is "real" — only that this metadata was registered and signed.</li>
+                        <li>Timestamps are <strong>self-reported</strong>. We cryptographically bind a timestamp into the signature, but we don't independently verify when the image was generated.</li>
+                        <li>The invisible watermark is supplementary. It can be lost to heavy JPEG (q&lt;50), cropping, rotation, or aggressive filters. The cryptographic seal stays valid even when the watermark is gone.</li>
+                    </ul>
+                </div>
+            `;
+
+            const html = `
+                <div class="freport">
+                    <div class="freport-head">
+                        <div class="label">Forensic Report</div>
+                        <div class="freport-verdict-row">
+                            <div>
+                                <div class="freport-verdict v-${meta.tone}">
+                                    ${meta.title}
+                                    <span class="qualifier">${meta.qualifier}</span>
+                                </div>
+                            </div>
+                            <div class="freport-conf">
+                                <div class="freport-conf-lbl">Confidence</div>
+                                <div class="freport-conf-pct">${confPct}%</div>
+                                <div class="freport-conf-meter">
+                                    <div class="freport-conf-bar ${confBucket}" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    ${meaning ? `<div class="freport-meaning"><strong>What this means:</strong> ${meaning}</div>` : ''}
+                    <div class="freport-body">
+                        <div class="freport-h">Evidence</div>
+                        <div class="evidence-grid">${evidenceHTML}</div>
+                        ${provHTML}
+                        ${limitsHTML}
+                        <div class="freport-raw-toggle">
+                            <button class="btn btn-secondary" id="freportRawBtn" type="button">View raw JSON</button>
+                            <pre class="freport-raw" id="freportRaw"></pre>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            reportContent.innerHTML = html;
+
+            // Animate the confidence meter after the card is in the DOM
+            requestAnimationFrame(() => {
+                const bar = reportContent.querySelector('.freport-conf-bar');
+                if (bar) bar.style.width = confPct + '%';
+            });
+
+            // Wire up the raw-JSON toggle (re-bind every render)
+            const rawBtn = reportContent.querySelector('#freportRawBtn');
+            const rawPre = reportContent.querySelector('#freportRaw');
+            if (rawBtn && rawPre) {
+                rawBtn.addEventListener('click', () => {
+                    if (rawPre.style.display === 'block') {
+                        rawPre.style.display = 'none';
+                        rawBtn.textContent = 'View raw JSON';
+                    } else {
+                        rawPre.textContent = JSON.stringify(report, null, 2);
+                        rawPre.style.display = 'block';
+                        rawBtn.textContent = 'Hide raw JSON';
+                    }
+                });
+            }
+        }
 
         function showLoading(show) {
             loading.style.display = show ? 'block' : 'none';
