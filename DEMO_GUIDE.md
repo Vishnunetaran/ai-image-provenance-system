@@ -66,15 +66,15 @@ This demo is designed to be **forensically honest**, not to showcase perfect det
 
 ### Mode B: Realistic Verification (Real-World Conditions)
 
-**Scenario**: Register image, then verify after JPEG compression or resizing
+**Scenario**: Register image, then verify after JPEG compression, resizing, or format conversion
 
-**Purpose**: Demonstrate realistic forensic verification where watermark may fail but cryptographic proof remains valid
+**Purpose**: Show that cryptographic proof remains valid even when the image has been transformed in transit. With the v2.0 hybrid DWT+DCT watermark, light transforms (JPEG Q≥75, ±10% resize, PNG↔JPEG) often still yield a successful watermark extraction; heavier transforms will lose it.
 
 **Expected Results**:
-- ✅ Cryptographic signature: VALID (if metadata unchanged)
-- ✅ Perceptual hash: MATCH (tolerant to modifications)
-- ❌ Watermark: NOT EXTRACTED (expected failure)
-- **Verdict**: VERIFIED_MODIFIED
+- ✅ Cryptographic signature: VALID (metadata unchanged)
+- ✅ Perceptual hash: MATCH (tolerant to compression/resize)
+- ⚠️ Watermark: EXTRACTED for light transforms, LOST for heavy ones (Q<50, cropping, rotation, heavy filtering)
+- **Verdict**: `verified` if watermark survived, `verified_modified` if it didn't — both are valid outcomes
 
 **Steps**:
 
@@ -114,14 +114,16 @@ This demo is designed to be **forensically honest**, not to showcase perfect det
    - Observe:
      • Signature: VALID (metadata unchanged)
      • Perceptual hash: MATCH (tolerant to compression)
-     • Watermark: NOT EXTRACTED (expected)
+     • Watermark: may be EXTRACTED for light transforms,
+       NOT EXTRACTED if the transform was aggressive
    ```
 
 4. **Interpret Results**
    ```
-   - Verdict: VERIFIED_MODIFIED
-   - Explanation: Cryptographic proof valid, watermark lost
-   - This is EXPECTED and DOCUMENTED behavior
+   - Verdict: "verified" if watermark survived,
+     "verified_modified" if it didn't
+   - In both cases the cryptographic proof is intact
+   - Watermark loss is EXPECTED and DOCUMENTED behavior
    ```
 
 **Key Talking Points**:
@@ -156,13 +158,13 @@ This demo is designed to be **forensically honest**, not to showcase perfect det
 
 **Verification**: Verify compressed image (Mode B)
 
-**Expected Verdict**: VERIFIED_MODIFIED
+**Expected Verdict**: `verified` (if watermark survived) or `verified_modified` (if it was lost)
 
 **Talking Points**:
 - Cryptographic signature still valid
 - Perceptual hash matches despite compression
-- Watermark lost (expected, documented)
-- **Provenance remains valid**
+- v2.0 watermark often survives Q=75 — if it doesn't, that's expected and documented
+- **Provenance remains valid either way**
 
 ---
 
@@ -233,38 +235,48 @@ curl http://localhost:5000/api/v1/report/{image_id}?format=text
 
 ## Explaining the Verdict System
 
-### 5-Level Verdict Scale
+Two verdict vocabularies exist because two different endpoints answer two different questions.
 
-| Verdict | Meaning | Cryptographic Proof | Forensic Evidence |
-|---------|---------|---------------------|-------------------|
-| **verified** | All verification layers succeeded | ✅ Signature valid | ✅ Watermark extracted |
-| **likely_authentic** | Cryptographic proof valid, some forensic evidence | ✅ Signature valid | ⚠️ Partial evidence |
-| **verified_modified** | Cryptographic proof valid, watermark lost | ✅ Signature valid | ❌ Watermark lost |
-| **suspicious** | Forensic evidence conflicts | ⚠️ Signature issues | ⚠️ Evidence conflicts |
-| **tampered** | Cryptographic proof failed | ❌ Signature invalid | N/A |
-| **not_found** | No provenance record | N/A | N/A |
+### `POST /api/v1/images/verify` — what happened during this verification
+
+| Verdict | Meaning |
+|---------|---------|
+| `verified` | Signature valid, perceptual hash matched, watermark extracted |
+| `verified_modified` | Signature valid, perceptual hash matched, watermark lost (expected after some transforms) |
+| `tampered` | Signature invalid or perceptual hash mismatch |
+| `not_found` | No provenance record matches this image |
+
+### `GET /api/v1/report/<image_id>` — forensic summary
+
+| Verdict | Trigger |
+|---------|---------|
+| `authentic` | Confidence = 1.0 (all three layers passed) |
+| `likely_authentic` | Confidence ≥ 0.5 with valid signature |
+| `suspicious` | Mixed signals, low confidence, signature valid |
+| `tampered` | Signature invalid |
+| `not_found` | No provenance record |
 
 ### Confidence Scoring
 
 **Confidence Score**: 0.0 - 1.0
 
-**Calculation**:
+**Calculation** (additive):
 - Signature valid: +0.5
-- Perceptual hash match: +0.3
-- Watermark extracted: +0.2
+- Watermark extracted: +0.3
+- Perceptual hash match: +0.2
 
 **Interpretation**:
-- 0.8-1.0: High confidence (all layers agree)
-- 0.5-0.8: Moderate confidence (cryptographic proof valid)
-- 0.0-0.5: Low confidence (no cryptographic proof)
+- 1.0: All layers passed (`authentic`)
+- 0.5–0.9: Cryptographic proof valid, partial forensic evidence (`likely_authentic`)
+- < 0.5: No cryptographic proof or contradictory signals
 
 ---
 
 ## Common Questions & Answers
 
-### Q: Why does watermark extraction fail after JPEG compression?
+### Q: Why does watermark extraction sometimes fail after JPEG compression?
 
-**A**: JPEG compression uses lossy DCT quantization that destroys mid-frequency coefficients where watermarks are embedded. This is a **known limitation** of frequency-domain watermarking. The system compensates by relying primarily on cryptographic signatures, which remain valid.
+**A**: JPEG compression uses lossy DCT quantization that attacks the same mid-frequency coefficients where watermarks live. The v2.0 hybrid DWT+DCT engine adds redundancy and a sync prefix that helps survive Q≥75, but at lower qualities the signal is destroyed. The system compensates by relying primarily on cryptographic signatures, which remain valid regardless.
 
 ### Q: Does watermark failure mean the image is not verified?
 
@@ -328,10 +340,10 @@ curl http://localhost:5000/api/v1/report/{image_id}?format=text
 
 ### 4. Demo Mode B: Realistic Conditions (5 min)
 - Register image
-- Compress to JPEG Q=75
+- Compress to JPEG (try Q=75 and Q=40 for contrast)
 - Verify compressed image
-- Watermark fails (expected)
-- Cryptographic proof remains valid
+- Watermark may survive at Q=75, will fail at Q=40
+- Cryptographic proof remains valid in both cases
 
 ### 5. System Limitations (3 min)
 - Watermark robustness
@@ -349,9 +361,4 @@ curl http://localhost:5000/api/v1/report/{image_id}?format=text
 
 PROVENA-FLASK demonstrates **cryptographic provenance tracking** with honest limitations. The system is suitable for research and education, showcasing how cryptographic signatures provide authoritative proof of origin, with watermarking as supplementary forensic evidence.
 
-**Key Takeaway**: Cryptographic provenance is robust and reliable. Watermark extraction is probabilistic and may fail. This is expected, documented, and does not invalidate the provenance proof.
-
----
-
-**Demo Guide Version**: 1.0  
-**Last Updated**: 2026-01-26
+**Key Takeaway**: Cryptographic provenance is robust and reliable. Watermark extraction is best-effort and may fail under heavy transformation. This is expected, documented, and does not invalidate the provenance proof.

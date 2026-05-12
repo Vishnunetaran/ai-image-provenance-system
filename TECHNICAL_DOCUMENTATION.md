@@ -1,14 +1,12 @@
 # PROVENA-FLASK: Technical Documentation
 
-**Version**: 1.0  
-**Date**: 2026-01-26  
 **Status**: Research Implementation
 
 ---
 
 ## Executive Summary
 
-PROVENA-FLASK is a provenance tracking system for AI-generated images. It provides **cryptographic proof of metadata integrity** through Ed25519 digital signatures, supplemented by perceptual hashing and basic invisible watermarking.
+PROVENA-FLASK is a provenance tracking system for AI-generated images. It provides **cryptographic proof of metadata integrity** through Ed25519 digital signatures, supplemented by perceptual hashing and a hybrid DWT+DCT invisible watermark (v2.0).
 
 **What This System Proves:**
 - An image was registered with specific metadata (model, timestamp)
@@ -85,13 +83,29 @@ PROVENA-FLASK is a provenance tracking system for AI-generated images. It provid
 
 ### Technology Stack
 
-- **Framework**: Flask (Python)
-- **Cryptography**: Ed25519 (cryptography library)
-- **Watermarking**: DWT via PyWavelets
-- **Image Processing**: OpenCV (cv2)
-- **Perceptual Hashing**: Custom DCT-based implementation
-- **Database**: SQLite with append-only constraints
-- **Logging**: Python logging with JSON formatting
+- **Framework**: Flask 3.0
+- **Cryptography**: Ed25519 via `cryptography` 41.x
+- **Watermarking**: Hybrid DWT (`PyWavelets`) + DCT (`OpenCV`), embedded on the luminance channel
+- **Image Processing**: OpenCV (`cv2`), Pillow
+- **Perceptual Hashing**: DCT-based pHash (with `imagehash` available as a dependency)
+- **Database**: SQLite with append-only triggers
+- **Logging**: Python `logging` with structured (JSON-friendly) formatting
+
+### API Surface
+
+Implemented routes:
+
+| Method | Path | Behavior |
+|--------|------|----------|
+| `POST` | `/api/v1/images/register` | Sign metadata, embed watermark, write registry row |
+| `POST` | `/api/v1/images/verify` | Try watermark, fall back to pHash, verify signature |
+| `GET` | `/api/v1/provenance/<image_id>` | Return raw provenance record |
+| `GET` | `/api/v1/report/<image_id>` | Forensic report; `?format=text` for plain text |
+| `GET` | `/reports/<image_id>` | Same report under a separate blueprint |
+| `GET` | `/health`, `/api/v1/status`, `/registry/status`, `/watermark/status`, `/verification/status`, `/reports/status` | Liveness |
+| `GET` | `/` | Demo HTML UI |
+
+Scaffolded but unimplemented (return HTTP 501): `GET /registry/records`, `POST /watermark/embed`, `POST /watermark/extract`, `POST /verification/check`. The corresponding logic is performed inside `/api/v1/images/register` and `/api/v1/images/verify` and is not exposed as standalone endpoints.
 
 ---
 
@@ -117,8 +131,8 @@ PROVENA-FLASK is a provenance tracking system for AI-generated images. It provid
    ↓
 7. Sign metadata with private key → signature
    ↓
-8. Embed watermark in image (DWT):
-   payload = image_id + timestamp
+8. Embed watermark in image (hybrid DWT+DCT, v2.0):
+   payload = image_id + ":" + timestamp, padded to 16 bytes (128 bits)
    ↓
 9. Store in registry:
    - image_id
@@ -188,9 +202,20 @@ The system uses **defense in depth** with three verification layers:
 |-------|--------|------------|---------|
 | **Primary** | Ed25519 Signature | ✅ ROBUST | Cryptographic proof of metadata integrity |
 | **Secondary** | Perceptual Hash (pHash) | ✅ ROBUST | Tolerant matching despite modifications |
-| **Tertiary** | DWT Watermark | ⚠️ LIMITED | Supplementary evidence (unreliable) |
+| **Tertiary** | Hybrid DWT+DCT Watermark (v2.0) | ⚠️ BEST-EFFORT | Supplementary evidence; survives light transforms |
 
-**Rationale**: Since watermarks are unreliable (Phase 8 findings), the system relies primarily on cryptographic signatures and perceptual hashing for verification.
+**Rationale**: Watermarks are best-effort forensic traces. The system always treats the Ed25519 signature plus perceptual-hash match as authoritative — a missing watermark produces the `verified_modified` verdict, not a failure.
+
+### Verdict scales
+
+Two verdict vocabularies live side by side and serve different surfaces:
+
+| Surface | Possible verdicts |
+|---------|-------------------|
+| `POST /api/v1/images/verify` (`status` field) | `verified`, `verified_modified`, `tampered`, `not_found` |
+| `GET /api/v1/report/<image_id>` (`verdict` field) | `authentic`, `likely_authentic`, `suspicious`, `tampered`, `not_found` |
+
+The forensic report also returns a `confidence_score` in `[0.0, 1.0]`: +0.5 if the signature is valid, +0.3 if the watermark was extracted, +0.2 if the perceptual hash matched. `authentic` requires 1.0; `likely_authentic` requires ≥0.5 with a valid signature.
 
 ---
 
@@ -243,26 +268,23 @@ This system provides **cryptographic proof that metadata was signed**, not that 
 
 ## Honest System Limitations
 
-### 1. Watermark Robustness (CRITICAL)
+### 1. Watermark Robustness
 
-**Limitation**: Watermarks do not survive common transformations.
+**Limitation**: Watermark extraction is best-effort and can still fail under aggressive transformations.
 
-**Phase 8 Test Results**:
-- JPEG compression (Q=75): ~0% extraction success
-- Resizing (±10%): ~0% extraction success
-- Format conversion: ~0% extraction success
-- **Target**: ≥90% success
-- **Actual**: ~0% success
+**v2.0 (current) engine**: hybrid DWT+DCT on the luminance (Y) channel, with:
+- 5× redundant bit embedding and majority voting
+- 16-bit synchronization prefix for limited geometric resync
+- Repetition coding so partial bit loss is tolerable
+- Embedding strength tuned for PSNR ≥45 dB / SSIM ≥0.99
 
-**Root Cause**: Basic DWT implementation without:
-- Advanced error correction codes
-- Synchronization markers
-- Geometric transformation resistance
-- Spread spectrum techniques
+**Designed to survive**: JPEG Q≥75, ±10% resizing, basic format conversion (PNG↔JPEG).
 
-**Impact**: Watermark verification is **unreliable** and should not be used as primary verification method.
+**Will likely fail under**: extreme compression (Q<50), cropping, rotation, heavy filtering, or any geometric attack outside the sync window.
 
-**Mitigation**: System relies on cryptographic signatures (robust) and perceptual hashing (tolerant).
+**Impact**: Watermark is a *supplementary* signal. Even when extraction fails, the cryptographic signature plus perceptual-hash match still produce a `verified_modified` verdict — this is the intended behavior, not an error.
+
+**Mitigation**: System always relies on cryptographic signatures (robust) and perceptual hashing (tolerant) for authoritative proof.
 
 ### 2. Timestamp Trust
 
@@ -357,7 +379,7 @@ This system provides **cryptographic proof that metadata was signed**, not that 
 
 | Threat | Why Not | Impact |
 |--------|---------|--------|
-| **Watermark Removal** | Basic DWT implementation | ⚠️ HIGH (watermarks easily removed) |
+| **Aggressive watermark removal** | v2.0 improves resilience but is not adversarial-grade | ⚠️ MODERATE (signature still proves provenance) |
 | **Private Key Compromise** | No HSM, file-based storage | ⚠️ CRITICAL (game over if compromised) |
 | **Sophisticated Image Edits** | Perceptual hash limitations | ⚠️ MODERATE (undetectable edits possible) |
 | **Timestamp Fraud** | Self-reported timestamps | ⚠️ MODERATE (no independent verification) |
@@ -478,7 +500,7 @@ This system explicitly does NOT attempt to:
 
 ### Known Limitations (Acknowledged)
 
-- Watermark robustness below academic standards (Phase 8: ~0% vs ≥90% target)
+- Watermark robustness improved in v2.0 but still bounded — adversarial removal and heavy compression can defeat extraction
 - Centralized trust model (no blockchain)
 - Self-reported timestamps (no independent verification)
 - Basic threat model (sophisticated attacks not addressed)
@@ -517,7 +539,7 @@ This system explicitly does NOT attempt to:
 ### Current Status
 
 **Research Implementation**: ✅ Complete  
-**Production Ready**: ⚠️ Partial (cryptography robust, watermarks weak)  
+**Production Ready**: ⚠️ Partial — cryptography is robust; watermarking is best-effort, key storage is file-based, and the registry is centralized.  
 **Recommended Use**: Internal provenance tracking, research, education  
 
 ---
@@ -533,7 +555,7 @@ PROVENA-FLASK successfully demonstrates **cryptographic provenance tracking** fo
 - Honest limitation documentation builds trust
 
 **Key Weaknesses**:
-- Watermark extraction is unreliable (Phase 8: ~0% success)
+- Watermark extraction is best-effort — adversarial transforms can defeat it
 - Centralized trust model
 - No independent timestamp verification
 - Limited threat model
@@ -542,7 +564,4 @@ PROVENA-FLASK successfully demonstrates **cryptographic provenance tracking** fo
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: 2026-01-26  
-**Author**: PROVENA-FLASK Development Team  
 **License**: Research Use Only

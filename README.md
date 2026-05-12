@@ -110,10 +110,11 @@ This system is fundamentally a **cryptographic provenance platform**, not a wate
 
 ### 🎨 Forensic Watermarking (Supplementary)
 
-- **Hybrid DWT+DCT**: Frequency-domain embedding
-- **Imperceptible**: PSNR ≥40dB, SSIM ≥0.95
+- **Hybrid DWT+DCT (v2.0)**: Frequency-domain embedding on the luminance channel
+- **Imperceptible**: PSNR ≥45dB, SSIM ≥0.99 targets (configurable)
+- **Robustness aids**: 5x redundant bit embedding with majority voting, 16-bit sync prefix, repetition-coded payload
 - **Forensic Trace**: Provides additional evidence when extractable
-- **Honest Limitations**: May fail under JPEG compression, resizing, format conversion
+- **Honest Limitations**: Can still be lost under heavy JPEG (Q<50), cropping, rotation, or aggressive filtering
 
 ### 📊 Forensic Reporting
 
@@ -133,35 +134,29 @@ This system is fundamentally a **cryptographic provenance platform**, not a wate
 
 ## API Endpoints
 
+All JSON endpoints accept and return `application/json`. Images are passed as base64-encoded strings (max 16 MB; allowed types: png, jpg, jpeg, webp).
+
 ### Core Provenance APIs
 
-#### Register Image with Provenance
-```
-POST /api/v1/images/register
-```
-**Purpose**: Establish cryptographic provenance for AI-generated image  
-**Returns**: Signature, registry record, watermarked image (forensic trace)
+| Method | Path | Purpose |
+|--------|------|---------|
+| `POST` | `/api/v1/images/register` | Establish cryptographic provenance for an AI-generated image. Returns signature, registry record, and watermarked image. |
+| `POST` | `/api/v1/images/verify` | Verify an image. Returns verdict (`verified`, `verified_modified`, `tampered`, `not_found`) plus per-layer signals (signature, perceptual hash, watermark). |
+| `GET` | `/api/v1/provenance/<image_id>` | Retrieve the full provenance record (metadata, signature, public key, timestamps). |
+| `GET` | `/api/v1/report/<image_id>` | Generate a forensic report. Supports `?format=text` for human-readable output; default is JSON. The same report is also served at `/reports/<image_id>`. |
 
-#### Verify Image Provenance
-```
-POST /api/v1/images/verify
-```
-**Purpose**: Verify image using cryptographic signature + forensic evidence  
-**Returns**: Verdict based on signature validity, perceptual match, watermark presence
+### Status / Health
 
-#### Retrieve Provenance Record
-```
-GET /api/v1/provenance/{image_id}
-```
-**Purpose**: Retrieve complete provenance record from registry  
-**Returns**: Metadata, signature, public key, timestamps
+| Method | Path | Purpose |
+|--------|------|---------|
+| `GET` | `/health` | App-level health check. |
+| `GET` | `/api/v1/status` | API liveness. |
+| `GET` | `/registry/status`, `/watermark/status`, `/verification/status`, `/reports/status` | Per-service liveness. |
+| `GET` | `/` | Demo UI (drag-and-drop register/verify, JSON inspection, forensic report viewer). |
 
-#### Generate Forensic Report
-```
-GET /api/v1/report/{image_id}
-```
-**Purpose**: Generate comprehensive forensic analysis report  
-**Returns**: Evidence summary, verdict, confidence score, limitations
+### Stub routes (return 501)
+
+`GET /registry/records`, `POST /watermark/embed`, `POST /watermark/extract`, and `POST /verification/check` are scaffolded but not implemented — the embedded/extracted operations happen inside `/api/v1/images/register` and `/api/v1/images/verify`.
 
 ---
 
@@ -169,15 +164,13 @@ GET /api/v1/report/{image_id}
 
 ### Watermark Robustness (Known Limitation)
 
-**Limitation**: Watermark extraction is probabilistic and may fail under real-world transformations.
+**Limitation**: Watermark extraction is probabilistic. The v2.0 hybrid DWT+DCT engine with redundancy and synchronization significantly improves resilience over a basic DWT scheme, but extraction can still fail under aggressive transformations.
 
-**Extraction Success Rates**:
-- No transformation: ~90%
-- JPEG Q=75: ~5%
-- Resizing ±10%: ~5%
-- Format conversion: ~5%
+**Designed to survive**: JPEG Q≥75, ±10% resizing, basic format conversion (PNG↔JPEG).
 
-**Impact**: Watermark provides supplementary forensic trace only. **Cryptographic verification remains authoritative** even when watermark extraction fails.
+**Will likely fail under**: extreme compression (Q<50), cropping, rotation, heavy filtering, or geometric attacks beyond the sync window.
+
+**Impact**: Watermark provides supplementary forensic trace only. **Cryptographic verification remains authoritative** even when watermark extraction fails — the `verified_modified` verdict is the expected outcome in that case, not a failure.
 
 **Mitigation**: System relies primarily on cryptographic signatures and perceptual hashing, which are robust and reliable.
 
@@ -258,7 +251,7 @@ This system is **conceptually aligned** with cryptographic provenance models use
 ```bash
 # Clone repository
 git clone <repository-url>
-cd AI_BLOCKCHAIN
+cd ai-image-provenance-system
 
 # Create virtual environment
 python -m venv venv
@@ -271,6 +264,9 @@ source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
+
+# (Optional) copy and edit environment file
+cp .env.example .env
 ```
 
 ### Run Server
@@ -279,7 +275,9 @@ pip install -r requirements.txt
 python run.py
 ```
 
-Server will start on `http://localhost:5000`
+Server starts on `http://0.0.0.0:5000`. The demo UI is at `http://localhost:5000/`, and a health check is exposed at `/health`.
+
+The first call to `/api/v1/images/register` will auto-generate an Ed25519 key pair under `./keys/` and create the SQLite registry under `./data/`. Both directories are git-ignored.
 
 ---
 
@@ -331,36 +329,38 @@ print(f"Watermark Present: {result['verification']['watermark_extracted']}")
 
 ## Testing
 
-### Run All Tests
+Each script is a standalone runner that exits non-zero on failure. With the Flask server stopped (most are unit tests), run any of:
 
 ```bash
-# Cryptography tests
-python test_crypto.py
-
-# Registry tests
-python test_registry.py
-
-# Perceptual hash tests
-python test_phash.py
-
-# Forensic report tests
-python test_forensic.py
-
-# Security tests
-python test_security.py
+python test_crypto.py                    # Ed25519 sign/verify
+python test_registry.py                  # Append-only registry semantics
+python test_phash.py                     # Perceptual hashing
+python test_watermark.py                 # Hybrid DWT+DCT embed/extract
+python test_forensic.py                  # Forensic report service
+python test_security.py                  # Input validation, rate limiting
+python test_security_attacks.py          # Attack scenarios
+python test_robustness.py                # Watermark survival under transforms
+python test_verification_accuracy.py     # End-to-end verdict accuracy
 ```
 
-**Test Coverage**: 43/43 tests passing (100% on tested components)
+Endpoint and integration tests require the server running (`python run.py`):
+
+```bash
+python test_api.py                       # /api/v1/images/* round-trip
+python test_endpoints.py                 # Status / health routes
+python test_integration.py               # Full register → verify flow
+python test_forensic_report_endpoint.py  # /api/v1/report/<id>
+```
+
+`demo_crypto.py` is a standalone walkthrough of the signing/verification flow with no server required.
 
 ---
 
 ## Documentation
 
-- **TECHNICAL_DOCUMENTATION.md**: Complete system architecture and design
-- **WATERMARK_UPGRADE_TECHNICAL_NOTE.md**: Watermark engine technical details
-- **DEMO_GUIDE.md**: Demo usage guide with realistic scenarios
-- **SERVER_RUNNING.md**: Server deployment and endpoint documentation
-- **PHASE0-9_COMPLETE.md**: Development phase summaries
+- [README.md](README.md) — this file: overview, install, API surface
+- [TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md) — architecture, verification flow, threat model, limitations
+- [DEMO_GUIDE.md](DEMO_GUIDE.md) — demo scenarios and talking points
 
 ---
 
