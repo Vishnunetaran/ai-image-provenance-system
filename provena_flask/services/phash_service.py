@@ -79,22 +79,25 @@ class PerceptualHashService:
             gray = image
         
         # Standard pHash recipe: resize to 4 * hash_size (even), then DCT.
-        # cv2.dct requires even-dimensioned inputs (OpenCV 4.13+ enforces this
-        # strictly), so we use a 32x32 working size for the default 8-bit hash
-        # and keep the top-left low-frequency block.
+        # cv2.dct in OpenCV 4.13+ requires even-dimensioned inputs, so we
+        # use a 32x32 working size for the default 8-bit hash and keep the
+        # top-left low-frequency block including the DC coefficient.
+        #
+        # Including DC keeps the hash dominated by overall luminance
+        # structure, which makes it stable across imperceptible mid-band
+        # perturbations (e.g. our DWT+DCT watermark). Excluding DC made
+        # the hash too sensitive to watermarking and broke roundtrips.
         dct_size = hash_size * 4
         resized = cv2.resize(gray, (dct_size, dct_size), interpolation=cv2.INTER_AREA)
 
         # Convert to float
         resized_float = resized.astype(np.float32)
 
-        # Compute DCT (Discrete Cosine Transform)
+        # Compute DCT
         dct = cv2.dct(resized_float)
 
-        # Extract top-left hash_size x hash_size coefficients
-        # (low frequencies, most important for perceptual similarity).
-        # Skip the DC component (dct[0,0]) by taking [1:hash_size+1, 1:hash_size+1].
-        dct_low = dct[1:hash_size + 1, 1:hash_size + 1]
+        # Extract top-left hash_size x hash_size low-frequency block.
+        dct_low = dct[:hash_size, :hash_size]
         
         # Compute median
         median = np.median(dct_low)
