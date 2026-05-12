@@ -339,6 +339,30 @@ class ProvenanceDatabase:
             
             return [dict(row) for row in rows]
     
+    def search_by_watermark_payload(self, payload: bytes) -> Optional[dict]:
+        """
+        Find a single record whose watermark_payload matches exactly.
+
+        Used by the verify path to resolve a payload extracted from the
+        HydraWatermark stack back to its registry record.
+
+        Args:
+            payload: 6-byte codec-encoded payload (or any length).
+
+        Returns:
+            dict | None: First matching record, or None.
+        """
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT * FROM provenance_records WHERE watermark_payload = ? LIMIT 1",
+                (payload,)
+            )
+            row = cursor.fetchone()
+            self._log_audit(conn, 'SEARCH', details=f"watermark_payload[{len(payload)}b]")
+            conn.commit()
+            return dict(row) if row else None
+
     def search_by_perceptual_hash(self, perceptual_hash: str, max_distance: int = 0) -> list[dict]:
         """
         Search records by perceptual hash.

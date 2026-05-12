@@ -12,11 +12,49 @@ from datetime import datetime
 import base64
 import logging
 
+from PIL import Image
+import io as _io
+
 from provena_flask.services.crypto_service import CryptoService
 from provena_flask.services.watermark_service import WatermarkService
 from provena_flask.services.registry_service import RegistryService
 from provena_flask.services.phash_service import PerceptualHashService
 from provena_flask.services.key_storage import KeyStorageService
+from provena_flask.services import hydra_watermark, payload_codec
+
+
+def _bgr_to_pil(bgr_image):
+    """OpenCV BGR ndarray → PIL RGB Image."""
+    rgb = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2RGB)
+    return Image.fromarray(rgb)
+
+
+def _pil_to_bgr(pil_image):
+    """PIL Image → OpenCV BGR ndarray (uint8)."""
+    return cv2.cvtColor(np.array(pil_image.convert("RGB")), cv2.COLOR_RGB2BGR)
+
+
+def _coerce_native(obj):
+    """Recursively convert numpy scalars to JSON-serializable Python types."""
+    if isinstance(obj, dict):
+        return {k: _coerce_native(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_coerce_native(v) for v in obj]
+    if isinstance(obj, np.generic):
+        return obj.item()
+    return obj
+
+
+def _image_id_to_record_int(image_id: str) -> int:
+    """Derive a stable 32-bit int from an image_id string. Used as the record_id
+    embedded in the 6-byte hybrid watermark payload."""
+    hex_part = image_id.replace('img-', '').replace('-', '')
+    try:
+        return int(hex_part, 16) % (2**32)
+    except ValueError:
+        # Fall back to a stable hash if the id isn't a UUID
+        import hashlib
+        return int.from_bytes(hashlib.sha256(image_id.encode()).digest()[:4], 'big')
 
 logger = logging.getLogger(__name__)
 
@@ -84,47 +122,53 @@ def register_image():
         
         # Initialize services
         registry = RegistryService()
-        watermark_service = WatermarkService()
         phash_service = PerceptualHashService()
         key_storage = KeyStorageService(current_app.config['KEYS_DIR'])
-        
+
         # Generate image ID
         image_id = registry.generate_image_id()
-        
-        # Compute perceptual hash (before watermarking)
+
+        # Compute perceptual hash on the ORIGINAL image (pre-watermark)
         perceptual_hash = phash_service.compute_phash(image)
-        
+
         # Load or generate keys
         if not key_storage.key_exists('default'):
             logger.info("Generating default key pair")
             key_storage.generate_and_store_keys('default')
-        
+
         private_key = key_storage.load_private_key('default')
         public_key = key_storage.load_public_key('default')
         key_id = key_storage.get_key_id('default')
-        
-        # Create metadata for signing
+
+        # Sign metadata
         metadata = {
             'image_id': image_id,
             'model_id': data['model_id'],
             'timestamp': data['timestamp'],
-            'perceptual_hash': perceptual_hash
+            'perceptual_hash': perceptual_hash,
         }
-        
         if 'prompt_hash' in data:
             metadata['prompt_hash'] = data['prompt_hash']
-        
-        # Sign metadata
         signature = CryptoService.sign(metadata, private_key)
-        
-        # Create watermark payload (image_id + timestamp)
-        watermark_payload = f"{image_id}:{data['timestamp']}".encode('utf-8')
-        watermark_payload = watermark_payload.ljust(16, b'\x00')[:16]  # Ensure 16 bytes
-        
-        # Embed watermark
-        watermarked_image = watermark_service.embed_watermark(image, watermark_payload)
-        
-        # Encode watermarked image
+
+        # Encode a 6-byte hybrid-watermark payload (4B record_id + 2B RS-ECC)
+        record_id_int = _image_id_to_record_int(image_id)
+        watermark_payload = payload_codec.encode(record_id_int)
+
+        # Embed via HydraWatermark: neural (TrustMark) + DCT + spatial LSB.
+        # First call lazy-loads the TrustMark model (~5s, ~700MB weights).
+        try:
+            pil_image = _bgr_to_pil(image)
+            watermarked_pil = hydra_watermark.embed(pil_image, watermark_payload)
+            watermarked_image = _pil_to_bgr(watermarked_pil)
+        except Exception as e:
+            logger.error(f"HydraWatermark embed failed: {e}", exc_info=True)
+            return jsonify({
+                'error': 'Watermark embedding failed',
+                'message': str(e),
+            }), 500
+
+        # Encode watermarked image as PNG for the response
         _, buffer = cv2.imencode('.png', watermarked_image)
         watermarked_b64 = base64.b64encode(buffer).decode('utf-8')
         
@@ -214,31 +258,28 @@ def verify_image():
         
         # Initialize services
         registry = RegistryService()
-        watermark_service = WatermarkService()
         phash_service = PerceptualHashService()
-        
-        # Extract watermark
-        extracted_payload = watermark_service.extract_watermark(image, payload_length=16)
-        
+
+        # Try HydraWatermark extraction first. The neural (TrustMark) layer is
+        # the robust one — it survives JPEG/resize/format conversion. The DCT
+        # and LSB layers are diagnostic / break-glass.
         watermark_extracted = False
-        image_id = None
-        
-        if extracted_payload:
-            try:
-                payload_str = extracted_payload.decode('utf-8').rstrip('\x00')
-                if ':' in payload_str:
-                    image_id = payload_str.split(':')[0]
-                    watermark_extracted = True
-            except:
-                pass
-        
-        # Compute perceptual hash
-        current_phash = phash_service.compute_phash(image)
-        
-        # Try to find by watermark first
+        watermark_breakdown = None
         provenance = None
-        if image_id:
-            provenance = registry.get_provenance(image_id)
+        try:
+            pil_image = _bgr_to_pil(image)
+            vote_result = hydra_watermark.extract(pil_image)
+            watermark_breakdown = _coerce_native(vote_result.breakdown)
+            if vote_result.payload and len(vote_result.payload) == 6:
+                # Try to find by exact payload match in the registry
+                provenance = registry.search_by_watermark_payload(vote_result.payload)
+                if provenance is not None:
+                    watermark_extracted = True
+        except Exception as e:
+            logger.warning(f"HydraWatermark extract failed (continuing with pHash fallback): {e}")
+
+        # Compute perceptual hash on the inspected image
+        current_phash = phash_service.compute_phash(image)
         
         # If not found by watermark, try perceptual hash matching with
         # Hamming-distance tolerance. The watermark embedding perturbs the
@@ -270,7 +311,8 @@ def verify_image():
                 'verification': {
                     'watermark_extracted': watermark_extracted,
                     'signature_valid': False,
-                    'perceptual_match': False
+                    'perceptual_match': False,
+                    'watermark_layers': watermark_breakdown,
                 }
             }), 404
         
@@ -314,7 +356,8 @@ def verify_image():
             'verification': {
                 'watermark_extracted': watermark_extracted,
                 'signature_valid': signature_valid,
-                'perceptual_match': perceptual_match
+                'perceptual_match': perceptual_match,
+                'watermark_layers': watermark_breakdown,
             }
         }), 200
         

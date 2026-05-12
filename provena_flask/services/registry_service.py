@@ -165,8 +165,11 @@ class RegistryService:
             return {'valid': False, 'error': 'Invalid timestamp format (use ISO 8601)'}
         
         # Validate watermark payload
-        if not isinstance(watermark_payload, bytes) or len(watermark_payload) < 16:
-            return {'valid': False, 'error': 'Invalid watermark payload (must be bytes, ≥16 bytes)'}
+        # Hybrid watermark uses a 6-byte codec-encoded payload (4-byte
+        # record_id + 2-byte Reed-Solomon ECC). Older callers used a 16-byte
+        # raw payload; both are valid.
+        if not isinstance(watermark_payload, bytes) or len(watermark_payload) < 6:
+            return {'valid': False, 'error': 'Invalid watermark payload (must be bytes, ≥6 bytes)'}
         
         # Validate perceptual hash
         if not perceptual_hash or len(perceptual_hash) < 8:
@@ -245,6 +248,14 @@ class RegistryService:
         
         return records
     
+    def search_by_watermark_payload(self, payload: bytes) -> Optional[Dict[str, Any]]:
+        """Find a single record whose watermark_payload matches exactly."""
+        db = self._get_db()
+        record = db.search_by_watermark_payload(payload)
+        if record:
+            logger.debug(f"Found record by watermark_payload: {record.get('image_id')}")
+        return record
+
     def search_by_perceptual_hash(self, perceptual_hash: str, max_distance: int = 0) -> List[Dict[str, Any]]:
         """
         Search records by perceptual hash with optional Hamming-distance tolerance.

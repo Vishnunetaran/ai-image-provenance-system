@@ -1213,7 +1213,7 @@
             <div class="flow-step">
                 <div class="flow-step-num">STEP 01 / REGISTER</div>
                 <h3>Sign &amp; stamp</h3>
-                <p>The image is hashed perceptually (<code>pHash</code>), the metadata is signed with <code>Ed25519</code>, and a 16-byte watermark payload is embedded into the luminance via hybrid <code>DWT+DCT</code>. The record lands in the append-only registry.</p>
+                <p>The image is hashed perceptually (<code>pHash</code>), the metadata is signed with <code>Ed25519</code>, and a 6-byte payload (4 B record ID + 2 B Reed-Solomon ECC) is embedded by the <strong>Hydra watermark</strong>: three independent layers — <code>TrustMark</code> neural, <code>DCT</code> frequency, and spatial <code>LSB</code> — all run sequentially. The record lands in the append-only registry.</p>
             </div>
             <div class="flow-step">
                 <div class="flow-step-num">STEP 02 / SHARE</div>
@@ -1243,19 +1243,25 @@
         <div class="curtain-grid">
             <!-- Card 1: watermark technique -->
             <div class="curtain-card">
-                <span class="tag">Watermarking · DWT + DCT</span>
-                <h3>Like writing on the back of the photo — except the back is invisible.</h3>
+                <span class="tag">Watermarking · Hydra · 3 layers</span>
+                <h3>Three independent watermarks. An attacker has to defeat all three to strip provenance.</h3>
                 <div class="analogy">
-                    We don't paint marks on pixels you can see. We modify a mathematical <em>shadow</em> of the image — its frequency representation — in a way that's invisible to humans but mechanical to read back.
+                    A single watermark is brittle. We embed <strong>three of them</strong> at registration, each operating in a different mathematical domain — a learned neural one, a frequency-domain one, and a pixel-level one. They don't interfere with each other because they target different aspects of the image. To remove the mark cleanly, an attacker has to break <em>all three</em> simultaneously.
                 </div>
                 <p>
-                    <strong>The embed.</strong> Convert the image into <em>frequency bands</em> using a <code>DWT</code> (Discrete Wavelet Transform). Watermarking lives in the mid-frequency horizontal band, where it's robust to mild compression but stays imperceptible. Inside that band, apply <code>DCT</code> — the same math that powers JPEG — on 8×8 blocks, and nudge specific mid-frequency coefficients up or down to encode 1s and 0s.
+                    <strong>Layer 1 · Neural (TrustMark).</strong> A learned encoder/decoder network that hides 48 bits of payload directly in image features. It survives JPEG compression, crops, and social-media re-encodes far better than any classical method — because it was trained to.
                 </p>
                 <p>
-                    <strong>The extract.</strong> Run the same math forward on the suspect image and read back those specific coefficients. A 16-bit <em>sync pattern</em> tells the decoder where the payload begins (so it can absorb a small shift), and every bit is embedded in <strong>5 places</strong> with majority voting to tolerate noise. Quality after embedding: <code>PSNR ≥ 45 dB</code>, <code>SSIM ≥ 0.99</code> — visually unchanged.
+                    <strong>Layer 2 · DCT frequency.</strong> The same math that powers JPEG. We quantize specific mid-frequency coefficients up or down to encode bits. Resilient to spatial attacks (blur, mild rotation) where neural can wobble.
+                </p>
+                <p>
+                    <strong>Layer 3 · Spatial LSB.</strong> Pixel-level least-significant-bit modulation, seeded by image dimensions and protected by Reed-Solomon error correction. Strong against frequency-domain attacks; the fallback signal of last resort.
+                </p>
+                <p>
+                    <strong>Extraction is a vote.</strong> All three layers decode independently. If they agree, confidence is very high. If they disagree, the system reports the breakdown — you see exactly which layer survived which transform.
                 </p>
                 <p style="color: var(--text-faint); font-size: 0.85rem; margin-top: 18px;">
-                    What it survives: JPEG q≥75, ±10% resize, basic format conversion. What it doesn't: heavy compression (q&lt;50), cropping, rotation, aggressive filters. When it fails, the cryptographic signature still proves origin — the watermark is supplementary.
+                    Payload is a 4-byte record ID + 2 bytes of Reed-Solomon ECC = 6 bytes / 48 bits. Quality after embedding: visually unchanged. Even when only one layer survives a transform, the registry lookup still works.
                 </p>
             </div>
 
@@ -1541,8 +1547,9 @@ fingerprint = (
                     <div id="resultContent"></div>
 
                     <div class="action-row">
-                        <button class="btn btn-secondary" id="jsonToggle">View JSON</button>
+                        <button class="btn btn-primary" id="downloadBtn" style="display: none;">↓ Download stamped image</button>
                         <button class="btn btn-primary" id="reportBtn" style="display: none;">View forensic report</button>
+                        <button class="btn btn-secondary" id="jsonToggle">View JSON</button>
                     </div>
                     <div class="json-content mono" id="jsonContent"></div>
                 </div>
@@ -1586,6 +1593,9 @@ fingerprint = (
         const clearBtn = document.getElementById('clearBtn');
         const jsonToggle = document.getElementById('jsonToggle');
         const reportBtn = document.getElementById('reportBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        let lastWatermarkedB64 = null;
+        let lastImageId = null;
 
         uploadSection.addEventListener('click', () => fileInput.click());
 
@@ -1919,7 +1929,27 @@ fingerprint = (
             reportSection.style.display = 'none';
             jsonContent.style.display = 'none';
             jsonToggle.textContent = 'View JSON';
+            downloadBtn.style.display = 'none';
         }
+
+        downloadBtn.addEventListener('click', () => {
+            if (!lastWatermarkedB64) return;
+            // Convert base64 → Blob and trigger a download
+            const byteChars = atob(lastWatermarkedB64);
+            const bytes = new Uint8Array(byteChars.length);
+            for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i);
+            const blob = new Blob([bytes], { type: 'image/png' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const shortId = (lastImageId || 'image').replace(/^img-/, '').slice(0, 8);
+            a.download = `provena-${shortId}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            // release the blob URL on the next tick
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        });
 
         function showSuccess(message) {
             alertContainer.innerHTML = `<div class="alert alert-success">${message}</div>`;
@@ -1936,6 +1966,10 @@ fingerprint = (
             document.getElementById('resultTitle').textContent = 'Registration result';
             const html = `
                 <div class="status-badge status-verified">REGISTERED</div>
+                <p style="color: var(--text-muted); font-size: 0.92rem; margin-bottom: 16px; line-height: 1.55;">
+                    Your image has been signed and stamped with an invisible watermark.
+                    <strong style="color: var(--text);">Download the stamped image below</strong> — that's the file you'll want to share or store. Verify it later by uploading it here.
+                </p>
                 <div class="info-grid">
                     <div class="info-item">
                         <label>Image ID</label>
@@ -1956,6 +1990,10 @@ fingerprint = (
                 </div>
             `;
             document.getElementById('resultContent').innerHTML = html;
+            // Stash the watermarked bytes for the download button.
+            lastWatermarkedB64 = data.watermarked_image || null;
+            lastImageId = data.image_id;
+            downloadBtn.style.display = lastWatermarkedB64 ? 'inline-block' : 'none';
             reportBtn.style.display = 'inline-block';
         }
 
@@ -1992,6 +2030,40 @@ fingerprint = (
                         </div>
                     </div>
                 `;
+
+                // Per-layer breakdown for the HydraWatermark stack
+                const layers = data.verification.watermark_layers;
+                if (layers && Object.keys(layers).length) {
+                    const LAYER_LABEL = {
+                        neural_trustmark: 'Neural (TrustMark)',
+                        dct_frequency:    'DCT frequency',
+                        spatial_lsb:      'Spatial LSB',
+                    };
+                    const order = ['neural_trustmark', 'dct_frequency', 'spatial_lsb'];
+                    const tiles = order.filter(k => layers[k]).map(k => {
+                        const layer = layers[k];
+                        const voted = layer.voted;
+                        const conf = typeof layer.confidence === 'number'
+                            ? Math.round(layer.confidence * 100) + '%'
+                            : '—';
+                        const status = voted
+                            ? `<span style="color: var(--success);">✓ ${conf}</span>`
+                            : `<span style="color: var(--text-muted);">— ${conf}</span>`;
+                        return `
+                            <div class="info-item">
+                                <label>${LAYER_LABEL[k] || k}</label>
+                                <value>${status}</value>
+                            </div>
+                        `;
+                    }).join('');
+                    html += `
+                        <h4>Watermark layers</h4>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 8px; margin-top: -6px;">
+                            Three independent watermark layers run at register time. An attacker would have to defeat all three to strip provenance.
+                        </p>
+                        <div class="info-grid">${tiles}</div>
+                    `;
+                }
             }
 
             if (data.provenance) {
