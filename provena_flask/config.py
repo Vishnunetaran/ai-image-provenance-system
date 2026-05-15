@@ -46,6 +46,10 @@ class DevelopmentConfig(Config):
     DEBUG = True
     TESTING = False
     LOG_LEVEL = 'DEBUG'
+    # Hot-reload Jinja templates on every request — handy during demos so
+    # template edits show up without a server restart, even with the Flask
+    # reloader disabled.
+    TEMPLATES_AUTO_RELOAD = True
 
 
 class ProductionConfig(Config):

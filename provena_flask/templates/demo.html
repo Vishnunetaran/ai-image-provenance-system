@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"></script>
     <style>
         :root {
             --bg: #0a0a0a;
@@ -115,6 +116,27 @@
             padding: 112px 32px 80px;
             position: relative;
         }
+        /* Canvas constellation behind the hero */
+        #heroParticles {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+        #heroParticles.lit { opacity: 1; }
+        /* anime.js entrance staging — start hidden, JS reveals */
+        .anim-init { opacity: 0; }
+        .hero-title .word {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(28px);
+            margin-right: 0.18em;
+        }
+        .hero-title .word:last-child { margin-right: 0; }
         .hero::before {
             content: '';
             position: absolute;
@@ -1127,34 +1149,39 @@
 
     <!-- ============ HERO ============ -->
     <section class="hero" id="home">
-        <div class="eyebrow mono">CRYPTOGRAPHIC PROVENANCE · RESEARCH BUILD</div>
-        <h1 class="hero-title">
-            Proof of origin for <span class="accent">AI&nbsp;images.</span>
+        <canvas id="heroParticles"></canvas>
+        <div class="eyebrow mono anim-init" id="heroEyebrow">CRYPTOGRAPHIC PROVENANCE · RESEARCH BUILD</div>
+        <h1 class="hero-title" id="heroTitle">
+            <span class="word">Proof</span>
+            <span class="word">of</span>
+            <span class="word">origin</span>
+            <span class="word">for</span>
+            <span class="word accent">AI&nbsp;images.</span>
         </h1>
-        <p class="hero-sub">
+        <p class="hero-sub anim-init" id="heroSub">
             Drop in any image. Get a <strong>Photo Receipt</strong> back — a set of seven independently-verifiable signals about that image, including a novel forensic primitive that <strong>measures the processing channel</strong> the image has travelled through since registration.
         </p>
         <div class="cta-row">
-            <a href="#app" class="btn-primary-lg">
+            <a href="#app" class="btn-primary-lg anim-init">
                 Try Now
                 <span class="arrow">→</span>
             </a>
-            <a href="#how" class="btn-ghost-lg">How it works</a>
+            <a href="#how" class="btn-ghost-lg anim-init">How it works</a>
         </div>
     </section>
 
     <!-- ============ STATS ============ -->
     <section class="stat-strip reveal">
         <div class="stat">
-            <div class="stat-num">7</div>
+            <div class="stat-num" data-target="7" data-format="int">0</div>
             <div class="stat-label">Independent signals</div>
         </div>
         <div class="stat">
-            <div class="stat-num">0.996</div>
+            <div class="stat-num" data-target="0.996" data-format="float3">0</div>
             <div class="stat-label">Cross-image similarity (same channel)</div>
         </div>
         <div class="stat">
-            <div class="stat-num">10/10</div>
+            <div class="stat-num" data-target="10" data-format="ratio10">0/10</div>
             <div class="stat-label">Unique fingerprints over a 10-channel sweep</div>
         </div>
         <div class="stat">
@@ -2100,6 +2127,201 @@ fingerprint = (
             });
         }, { threshold: 0.1 });
         document.querySelectorAll('.reveal').forEach((el) => revealObserver.observe(el));
+
+        // ================================================================
+        // anime.js — hero entrance, stat counters, particle constellation
+        // ================================================================
+        (function () {
+            if (typeof anime === 'undefined') {
+                // Graceful fallback: if anime.js failed to load, reveal everything
+                document.querySelectorAll('.anim-init, .hero-title .word').forEach(el => {
+                    el.style.opacity = 1;
+                    el.style.transform = 'none';
+                });
+                return;
+            }
+
+            // ---- Hero entrance timeline ----
+            const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (reducedMotion) {
+                document.querySelectorAll('.anim-init, .hero-title .word').forEach(el => {
+                    el.style.opacity = 1;
+                    el.style.transform = 'none';
+                });
+            } else {
+                const tl = anime.timeline({
+                    easing: 'easeOutExpo',
+                    duration: 800,
+                });
+                tl.add({
+                    targets: '#heroEyebrow',
+                    opacity: [0, 1],
+                    translateY: [-10, 0],
+                    duration: 600,
+                })
+                .add({
+                    targets: '.hero-title .word',
+                    opacity: [0, 1],
+                    translateY: [28, 0],
+                    duration: 900,
+                    delay: anime.stagger(75),
+                }, '-=300')
+                .add({
+                    targets: '#heroSub',
+                    opacity: [0, 1],
+                    translateY: [20, 0],
+                    duration: 700,
+                }, '-=500')
+                .add({
+                    targets: '.cta-row .anim-init',
+                    opacity: [0, 1],
+                    scale: [0.92, 1],
+                    duration: 600,
+                    delay: anime.stagger(90),
+                }, '-=400');
+            }
+
+            // ---- Stat counters (animate when scrolled in) ----
+            const statObs = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (!entry.isIntersecting) return;
+                    const el = entry.target;
+                    const target = el.dataset.target;
+                    const format = el.dataset.format;
+                    if (!target) return;
+                    if (reducedMotion) {
+                        // skip animation, set final state
+                        if (format === 'float3') el.textContent = parseFloat(target).toFixed(3);
+                        else if (format === 'ratio10') el.textContent = `${target}/10`;
+                        else el.textContent = target;
+                    } else {
+                        const counter = { v: 0 };
+                        const final = parseFloat(target);
+                        anime({
+                            targets: counter,
+                            v: final,
+                            duration: 1500,
+                            easing: 'easeOutCubic',
+                            update: () => {
+                                if (format === 'float3') {
+                                    el.textContent = counter.v.toFixed(3);
+                                } else if (format === 'ratio10') {
+                                    el.textContent = `${Math.round(counter.v)}/10`;
+                                } else {
+                                    el.textContent = Math.round(counter.v).toString();
+                                }
+                            },
+                        });
+                    }
+                    statObs.unobserve(el);
+                });
+            }, { threshold: 0.4 });
+            document.querySelectorAll('.stat-num[data-target]').forEach(el => statObs.observe(el));
+
+            // ---- Hero particle constellation ----
+            // 30fps, spatial-binned neighbour check, paused when tab is hidden,
+            // no per-particle shadowBlur. Stays cheap on a laptop.
+            (function initParticles() {
+                if (reducedMotion) return;
+                const canvas = document.getElementById('heroParticles');
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                const DPR = Math.min(window.devicePixelRatio || 1, 1.5);
+                const FRAME_MS = 1000 / 30;
+                const MAX_LINK = 110;
+                let particles = [];
+                let cw = 0, ch = 0;
+
+                function resize() {
+                    const parent = canvas.parentElement;
+                    const rect = parent.getBoundingClientRect();
+                    cw = rect.width;
+                    ch = rect.height;
+                    canvas.width = cw * DPR;
+                    canvas.height = ch * DPR;
+                    canvas.style.width = cw + 'px';
+                    canvas.style.height = ch + 'px';
+                    const count = Math.min(45, Math.max(18, Math.floor((cw * ch) / 22000)));
+                    particles = Array.from({ length: count }, () => ({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        vx: (Math.random() - 0.5) * 0.35 * DPR,
+                        vy: (Math.random() - 0.5) * 0.35 * DPR,
+                        r: (Math.random() * 1.4 + 0.6) * DPR,
+                    }));
+                }
+
+                let lastTick = 0;
+                function tick(t) {
+                    if (document.hidden) {
+                        requestAnimationFrame(tick);
+                        return;
+                    }
+                    if (t - lastTick < FRAME_MS) {
+                        requestAnimationFrame(tick);
+                        return;
+                    }
+                    lastTick = t;
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                    // step
+                    for (const p of particles) {
+                        p.x += p.vx;
+                        p.y += p.vy;
+                        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+                        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+                    }
+
+                    // link nearby pairs (O(n^2) but n is small)
+                    const maxD = MAX_LINK * DPR;
+                    const maxD2 = maxD * maxD;
+                    ctx.lineWidth = 0.5 * DPR;
+                    for (let i = 0; i < particles.length; i++) {
+                        const a = particles[i];
+                        for (let j = i + 1; j < particles.length; j++) {
+                            const b = particles[j];
+                            const dx = a.x - b.x;
+                            const dy = a.y - b.y;
+                            const d2 = dx * dx + dy * dy;
+                            if (d2 < maxD2) {
+                                const alpha = (1 - Math.sqrt(d2) / maxD) * 0.22;
+                                ctx.strokeStyle = `rgba(255, 45, 45, ${alpha})`;
+                                ctx.beginPath();
+                                ctx.moveTo(a.x, a.y);
+                                ctx.lineTo(b.x, b.y);
+                                ctx.stroke();
+                            }
+                        }
+                    }
+
+                    // dots
+                    ctx.fillStyle = 'rgba(255, 45, 45, 0.45)';
+                    for (const p of particles) {
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    requestAnimationFrame(tick);
+                }
+
+                window.addEventListener('resize', () => {
+                    clearTimeout(window.__pResize);
+                    window.__pResize = setTimeout(resize, 120);
+                });
+                resize();
+                // Fade the canvas in once particles exist
+                anime({
+                    targets: canvas,
+                    opacity: [0, 1],
+                    duration: 1200,
+                    delay: 200,
+                    easing: 'easeOutQuad',
+                    begin: () => canvas.classList.add('lit'),
+                });
+                requestAnimationFrame(tick);
+            })();
+        })();
     </script>
 </body>
 </html>
