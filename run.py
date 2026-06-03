@@ -18,11 +18,11 @@ if __name__ == '__main__':
     debug_mode = config_name == 'development'
     
     print(f"""
-    ╔═══════════════════════════════════════════════════════╗
-    ║   Provena-FLASK: AI Image Provenance Service         ║
-    ║   Environment: {config_name:<38} ║
-    ║   Debug Mode: {str(debug_mode):<39} ║
-    ╚═══════════════════════════════════════════════════════╝
+    +-------------------------------------------------------+
+    |   Provena-FLASK: AI Image Provenance Service         |
+    |   Environment: {config_name:<38} |
+    |   Debug Mode: {str(debug_mode):<39} |
+    +-------------------------------------------------------+
     """)
     
     app.run(

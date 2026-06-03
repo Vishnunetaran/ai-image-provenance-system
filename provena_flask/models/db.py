@@ -152,13 +152,13 @@ def find_by_hamming(phash_int: int, max_distance: int = 10) -> list[dict]:
 
     # --- Redis cache ---
     if _REDIS_AVAILABLE and _redis_client:
-        import pickle
+        import json
         cache_key = f"phash:{phash_int}:{max_distance}"
         try:
             cached = _redis_client.get(cache_key)    # type: ignore[union-attr]
             if cached:
                 logger.debug("pHash cache hit for %d", phash_int)
-                return pickle.loads(cached)
+                return json.loads(cached)
         except Exception:
             pass # ignore cache errors
 
@@ -169,9 +169,9 @@ def find_by_hamming(phash_int: int, max_distance: int = 10) -> list[dict]:
 
     # Cache results for 60 s
     if _REDIS_AVAILABLE and _redis_client:
-        import pickle
+        import json
         try:
-            _redis_client.setex(cache_key, 60, pickle.dumps(results))  # type: ignore[union-attr]
+            _redis_client.setex(cache_key, 60, json.dumps(results))  # type: ignore[union-attr]
         except Exception:
             pass  # fail soft if Redis goes down after init
 
@@ -375,6 +375,38 @@ def _init_sqlite_schema() -> None:
                 status_returned TEXT NOT NULL,
                 confidence      REAL,
                 request_id      TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS feature_anchors (
+                id          TEXT PRIMARY KEY,
+                record_id   TEXT NOT NULL,
+                patch_row   INTEGER NOT NULL,
+                patch_col   INTEGER NOT NULL,
+                feature_data BLOB NOT NULL,
+                created_at  TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_fa_record
+                ON feature_anchors(record_id);
+
+            CREATE TABLE IF NOT EXISTS sift_features (
+                record_id   TEXT PRIMARY KEY,
+                keypoints   BLOB NOT NULL,
+                descriptors BLOB NOT NULL,
+                created_at  TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS verification_telemetry (
+                id          TEXT PRIMARY KEY,
+                timestamp   TEXT NOT NULL,
+                layers_json TEXT NOT NULL,
+                attack_type TEXT,
+                outcome     TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS adaptive_config (
+                key         TEXT PRIMARY KEY,
+                value       TEXT NOT NULL,
+                updated_at  TEXT NOT NULL
             );
             """
         )

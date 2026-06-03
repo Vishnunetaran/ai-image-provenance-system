@@ -66,6 +66,15 @@ def _create_test_image_b64() -> str:
     return base64.b64encode(buf.getvalue()).decode("utf-8")
 
 
+def _create_small_test_image_b64() -> str:
+    """Returns base64 encoded small test image (128x128)."""
+    small = np.random.randint(0, 256, (8, 8, 3), dtype=np.uint8)
+    img = Image.fromarray(small).resize((128, 128), resample=Image.NEAREST)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return base64.b64encode(buf.getvalue()).decode("utf-8")
+
+
 def _corrupt_exif(image_b64: str) -> str:
     """Strip EXIF metadata to break C2PA signature."""
     import piexif
@@ -144,3 +153,52 @@ class TestFullVerificationFlow:
         # If EXIF parsed but signature failed, it would be TAMPERED.
         # For simplicity, just asserting it doesn't crash:
         assert verify_tamp_resp.status_code in (200, 400)
+
+    def test_register_small_image_fails(self, client, auth_headers):
+        small_img_b64 = _create_small_test_image_b64()
+        reg_resp = client.post(
+            "/v1/register",
+            headers=auth_headers,
+            json={
+                "image": small_img_b64,
+                "model_id": "test-model-1",
+                "creator_did": "did:test:123"
+            }
+        )
+        assert reg_resp.status_code == 400
+        assert "Image too small" in reg_resp.json["error"]["message"]
+
+    def test_verify_small_image_does_not_fail_size_check(self, client, auth_headers):
+        small_img_b64 = _create_small_test_image_b64()
+        verify_resp = client.post(
+            "/v1/verify",
+            headers=auth_headers,
+            json={"image": small_img_b64}
+        )
+        assert verify_resp.status_code == 200
+        assert verify_resp.json["status"] == "UNREGISTERED"
+
+    def test_legacy_register_small_image_fails(self, client, auth_headers):
+        small_img_b64 = _create_small_test_image_b64()
+        reg_resp = client.post(
+            "/v1/images/register",
+            headers=auth_headers,
+            json={
+                "image": small_img_b64,
+                "model_id": "test-model-1",
+                "timestamp": "2026-06-03T00:00:00Z"
+            }
+        )
+        assert reg_resp.status_code == 400
+        assert "Image too small" in reg_resp.json["error"]
+
+    def test_legacy_verify_small_image_does_not_fail_size_check(self, client, auth_headers):
+        small_img_b64 = _create_small_test_image_b64()
+        verify_resp = client.post(
+            "/v1/images/verify",
+            headers=auth_headers,
+            json={"image": small_img_b64}
+        )
+        assert verify_resp.status_code == 404
+        assert verify_resp.json["status"] == "not_found"
+

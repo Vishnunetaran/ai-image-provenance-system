@@ -12,7 +12,6 @@ import logging
 from provena_flask.services.registry_service import RegistryService
 from provena_flask.services.crypto_service import CryptoService
 from provena_flask.services.phash_service import PerceptualHashService
-from provena_flask.services.watermark_service import WatermarkService
 
 logger = logging.getLogger(__name__)
 

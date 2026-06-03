@@ -36,6 +36,33 @@ logger = logging.getLogger(__name__)
 api_bp = Blueprint("api_v1", __name__)
 
 # ---------------------------------------------------------------------------
+# Safe print helper for Windows consoles with restricted encodings (CP1252)
+# ---------------------------------------------------------------------------
+def print(*args, **kwargs):
+    import sys
+    trans = str.maketrans({
+        '╔': '+', '═': '-', '╗': '+',
+        '║': '|', '╟': '+', '─': '-',
+        '╢': '+', '╚': '+', '╝': '+',
+        '■': '*', '✓': '[OK]', '✗': '[FAIL]'
+    })
+    new_args = []
+    for arg in args:
+        if isinstance(arg, str):
+            new_args.append(arg.translate(trans))
+        else:
+            new_args.append(arg)
+    
+    try:
+        sys.stdout.write(" ".join(str(a) for a in new_args) + kwargs.get("end", "\n"))
+        sys.stdout.flush()
+    except UnicodeEncodeError:
+        safe_str = " ".join(str(a) for a in new_args).encode('ascii', errors='replace').decode('ascii')
+        sys.stdout.write(safe_str + kwargs.get("end", "\n"))
+        sys.stdout.flush()
+
+
+# ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 MAX_IMAGE_BYTES = 10 * 1024 * 1024   # 10 MB
@@ -157,6 +184,8 @@ def register_image():
         try:
             img = _open_image_safely(image_bytes)
             w, h = img.size
+            custom_fields["orig_width"] = w
+            custom_fields["orig_height"] = h
             print(f"║ Image Details: {len(image_bytes)/1024:.1f} KB | {w}x{h} px          ║")
         except ValueError as exc:
             print(f"║ [ERROR] Image invalid: {str(exc)[:25]:<25}  ║")
@@ -310,7 +339,7 @@ def verify_image():
             return bad_request(parse_error, "INVALID_IMAGE")
 
         try:
-            img = _open_image_safely(image_bytes)
+            img = _open_image_safely(image_bytes, enforce_min_size=False)
             print(f"║ Image: {len(image_bytes)/1024:.1f} KB | {img.size[0]}x{img.size[1]} px              ║")
         except ValueError as exc:
             print(f"║ [ERROR] Image invalid: {str(exc)[:25]:<25}  ║")
@@ -322,6 +351,8 @@ def verify_image():
         watermark_extracted = False
         c2pa_valid      = False
         hamming_dist    = None
+        tamper_map      = None
+        feature_match   = None
 
         # ── Path 1: C2PA manifest ────────────────────────────────────────────────
         print(f"╟────────────────────────────────────────────────────────╢")
@@ -336,7 +367,7 @@ def verify_image():
                 c2pa_valid = False
                 return _build_verify_response(
                     status, confidence, record, watermark_extracted, c2pa_valid, hamming_dist, request_id,
-                    match_type="c2pa"
+                    match_type="c2pa", tamper_map=tamper_map, feature_match=feature_match
                 )
 
             if manifest_result.valid:
@@ -353,7 +384,7 @@ def verify_image():
                     print(f"╚══════════════════════ VERIFIED ════════════════════════╝\n")
                     return _build_verify_response(
                         status, confidence, record, watermark_extracted, c2pa_valid, hamming_dist, request_id,
-                        match_type="c2pa"
+                        match_type="c2pa", tamper_map=tamper_map, feature_match=feature_match
                     )
             else:
                 print(f"║   Result: NOT FOUND                                    ║")
@@ -369,6 +400,8 @@ def verify_image():
             vote_result = hydra_watermark.extract(img)
             payload_bytes = vote_result.payload
             neural_confidence = vote_result.confidence
+            tamper_map = vote_result.tamper_map
+            feature_match = vote_result.feature_match
             print(f"║   Votes: {vote_result.winner_votes}/{vote_result.total_votes} layers agree (Conf: {neural_confidence:.3f})       ║")
             for lname, linfo in vote_result.breakdown.items():
                 status_char = "✓" if linfo.get("voted") else "✗"
@@ -387,6 +420,20 @@ def verify_image():
                 record = _get_record_by_payload(payload_bytes.hex())
 
                 if record:
+                    # Content-binding cross-verification check (Defense against Splicing)
+                    if feature_match and feature_match.get("matched"):
+                        fa_record_id = feature_match.get("record_id")
+                        if fa_record_id and fa_record_id != record.get("payload_hex") and fa_record_id != record.get("id"):
+                            print(f"║   [TAMPER] Splicing detected: SIFT={fa_record_id[:8]} != Watermark={record.get('payload_hex')[:8]} ║")
+                            status = "TAMPERED"
+                            confidence = 0.99
+                            _write_audit_log(record.get("id"), g.api_key["id"], status, confidence, 0, request_id)
+                            print(f"╚══════════════════════ TAMPERED ════════════════════════╝\n")
+                            return _build_verify_response(
+                                status, confidence, record, watermark_extracted, c2pa_valid, 0, request_id,
+                                match_type="hydra_neural", tamper_map=tamper_map, feature_match=feature_match
+                            )
+
                     print(f"║   Match:      FOUND in Database                        ║")
                     status              = "VERIFIED"
                     confidence          = neural_confidence
@@ -396,7 +443,7 @@ def verify_image():
                     print(f"╚══════════════════════ VERIFIED ════════════════════════╝\n")
                     return _build_verify_response(
                         status, confidence, record, watermark_extracted, c2pa_valid, hamming_dist, request_id,
-                        match_type="hydra_neural"
+                        match_type="hydra_neural", tamper_map=tamper_map, feature_match=feature_match
                     )
                 else:
                     print(f"║   Match:      NOT FOUND (Stale record?)                ║")
@@ -433,7 +480,7 @@ def verify_image():
             print(f"╚══════════════════ VERIFIED (MODIFIED) ═════════════════╝\n")
             return _build_verify_response(
                 status, confidence, record, watermark_extracted, c2pa_valid, hamming_dist, request_id,
-                match_type="phash"
+                match_type="phash", tamper_map=tamper_map, feature_match=feature_match
             )
         else:
             print(f"║   Result:     NO MATCH (Tight ≤{HAMMING_MAX})                    ║")
@@ -458,10 +505,41 @@ def verify_image():
             print(f"╚══════════════ VERIFIED (WIDE PHASH) ═══════════════════╝\n")
             return _build_verify_response(
                 status, confidence, record, watermark_extracted, c2pa_valid, hamming_dist, request_id,
-                match_type="wide_phash"
+                match_type="wide_phash", tamper_map=tamper_map, feature_match=feature_match
             )
-        else:
             print(f"║   Result:     NO MATCH (Wide ≤{HAMMING_WIDE})                    ║")
+
+        # ── Path 4: Feature Anchor Fallback (screenshot / fragment matching) ──────
+        if not record and feature_match and feature_match.get("matched") and feature_match.get("confidence", 0) >= 0.30:
+            fa_record_id = feature_match.get("record_id")
+            if fa_record_id:
+                try:
+                    from provena_flask.models import db as db_module2
+                    with db_module2.get_sqlite_connection() as conn:
+                        row = conn.execute(
+                            "SELECT * FROM provenance_records WHERE hex(id)=? OR id=? LIMIT 1",
+                            (fa_record_id.upper(), fa_record_id)
+                        ).fetchone()
+                        if row is None:
+                            row = conn.execute(
+                                "SELECT * FROM provenance_records WHERE payload_hex LIKE ? LIMIT 1",
+                                (fa_record_id[:6] + '%',)
+                            ).fetchone()
+                        if row is not None:
+                            record = dict(row)
+                            match_type = "feature_anchor"
+                            status = "VERIFIED_FRAGMENT"
+                            confidence = feature_match.get("confidence", 0)
+                            print(f"║   Result:     FEATURE ANCHOR MATCH FOUND               ║")
+                            print(f"║   Match ID:   {record.get('id')[:28]:<28} ║")
+                            print(f"╚══════════════ VERIFIED (FRAGMENT) ═════════════════════╝\n")
+                            _write_audit_log(record.get("id"), g.api_key["id"], status, confidence, None, request_id)
+                            return _build_verify_response(
+                                status, confidence, record, watermark_extracted, c2pa_valid, None, request_id,
+                                match_type="feature_anchor", tamper_map=tamper_map, feature_match=feature_match
+                            )
+                except Exception as fa_exc:
+                    logger.warning("Feature Anchor record lookup failed: %s", fa_exc)
 
         # ── No match ─────────────────────────────────────────────────────────────
         print(f"║ Final Verdict: {status:<40}║")
@@ -469,7 +547,8 @@ def verify_image():
         confidence = 1.0
         _write_audit_log(None, g.api_key["id"], status, confidence, None, request_id)
         return _build_verify_response(
-            status, confidence, None, False, False, None, request_id
+            status, confidence, None, False, False, None, request_id,
+            tamper_map=tamper_map, feature_match=feature_match
         )
     except Exception:
         err = traceback.format_exc()
@@ -543,6 +622,7 @@ def get_usage():
 # ---------------------------------------------------------------------------
 
 @api_bp.route("/images/register", methods=["POST"])
+@require_api_key(kind="register")
 def legacy_register():
     """
     Legacy POST /api/v1/images/register — maps demo UI to the new neural/C2PA pipeline.
@@ -566,19 +646,7 @@ def legacy_register():
         record_id = str(uuid.uuid4())
         phash_int, phash_hex = _compute_phash(img)
         
-        # Get a 'default' API key for the demo if none exists
-        with db_module.get_sqlite_connection() as conn:
-            row = conn.execute("SELECT id FROM api_keys LIMIT 1").fetchone()
-            if not row:
-                # Create a demo key if it's missing (shouldn't happen with run_migrations)
-                key_id = str(uuid.uuid4())
-                now_str = datetime.now(timezone.utc).isoformat()
-                conn.execute(
-                    "INSERT INTO api_keys (id, key_hash, org_name, created_at) VALUES (?, ?, ?, ?)",
-                    (key_id, "demo_hash", "Demo Org", now_str)
-                )
-            else:
-                key_id = row[0]
+        key_id = g.api_key["id"]
 
         from provena_flask.services import payload_codec
         record_id_int = int(record_id.replace('-', ''), 16) % (2**32)
@@ -617,6 +685,7 @@ def legacy_register():
         final_bytes = final_buf.getvalue()
         
         # 4. Database Insertion
+        w, h = img.size
         record = {
             "id": record_id,
             "image_phash_int": phash_int,
@@ -627,7 +696,7 @@ def legacy_register():
             "payload_hex": payload_hex,
             "manifest_id": manifest_id,
             "api_key_id": key_id,
-            "custom_fields": "{}",
+            "custom_fields": json.dumps({"orig_width": w, "orig_height": h}),
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
         
@@ -650,6 +719,7 @@ def legacy_register():
 
 
 @api_bp.route("/images/verify", methods=["POST"])
+@require_api_key(kind="verify")
 def legacy_verify():
     """Backward-compatible proxy to new verify logic (no auth required for demo)."""
     import cv2, numpy as np
@@ -662,7 +732,7 @@ def legacy_verify():
 
         try:
             image_bytes = base64.b64decode(data["image"])
-            img = _open_image_safely(image_bytes)
+            img = _open_image_safely(image_bytes, enforce_min_size=False)
         except Exception as exc:
             return jsonify({"error": f"Invalid image data: {exc}"}), 400
 
@@ -679,16 +749,28 @@ def legacy_verify():
         watermark_extracted = False
         match_type = None
         hydra_breakdown = {}
+        tamper_map = None
+        feature_match = None
         if not record:
             try:
                 vote_result = hydra_watermark.extract(img)
                 hydra_breakdown = vote_result.breakdown
+                tamper_map = vote_result.tamper_map
+                feature_match = vote_result.feature_match
                 if vote_result.confidence >= 0.5 and len(vote_result.payload) == 6:
                     record = _get_record_by_payload(vote_result.payload.hex())
                     if record:
-                        # Only mark watermark as extracted if it matched a real record
-                        watermark_extracted = True
-                        match_type = "hydra_neural"
+                        # Check for splicing mismatch
+                        if feature_match and feature_match.get("matched"):
+                            fa_record_id = feature_match.get("record_id")
+                            if fa_record_id and fa_record_id != record.get("payload_hex") and fa_record_id != record.get("id"):
+                                logger.warning("Legacy Verify: Splicing mismatch detected (SIFT=%s != Watermark=%s)", fa_record_id, record.get("payload_hex"))
+                                signature_invalid = True
+                                watermark_extracted = False
+                                match_type = "hydra_neural"
+                        if not signature_invalid:
+                            watermark_extracted = True
+                            match_type = "hydra_neural"
             except Exception:
                 pass
         else:
@@ -696,6 +778,16 @@ def legacy_verify():
             try:
                 vote_result = hydra_watermark.extract(img)
                 hydra_breakdown = vote_result.breakdown
+                tamper_map = vote_result.tamper_map
+                feature_match = vote_result.feature_match
+                
+                # Check for splicing mismatch on C2PA path
+                if feature_match and feature_match.get("matched"):
+                    fa_record_id = feature_match.get("record_id")
+                    if fa_record_id and fa_record_id != record.get("payload_hex") and fa_record_id != record.get("id"):
+                        logger.warning("Legacy Verify: Splicing mismatch detected on C2PA path (SIFT=%s != C2PA=%s)", fa_record_id, record.get("id"))
+                        signature_invalid = True
+                        
                 # For C2PA path: check if extracted payload matches the SAME record
                 if vote_result.confidence >= 0.5 and len(vote_result.payload) == 6:
                     wm_record = _get_record_by_payload(vote_result.payload.hex())
@@ -717,6 +809,31 @@ def legacy_verify():
             rec_phash_int = int(record.get("image_phash_int") or 0)
             dist = bin(phash_int ^ rec_phash_int).count('1')
             perceptual_match = (dist <= HAMMING_MAX)
+
+        # --- Path 4: Feature Anchor Fallback (screenshot / fragment matching) ---
+        if not record and feature_match and feature_match.get("matched") and feature_match.get("confidence", 0) >= 0.30:
+            # Feature anchor matched — try to resolve the record by hex record_id
+            fa_record_id = feature_match.get("record_id")
+            if fa_record_id:
+                try:
+                    from provena_flask.models import db as db_module2
+                    with db_module2.get_sqlite_connection() as conn:
+                        row = conn.execute(
+                            "SELECT * FROM provenance_records WHERE hex(id)=? OR id=? LIMIT 1",
+                            (fa_record_id.upper(), fa_record_id)
+                        ).fetchone()
+                        if row is None:
+                            # Try matching the payload_hex prefix (feature anchor stores the short hex record_id)
+                            row = conn.execute(
+                                "SELECT * FROM provenance_records WHERE payload_hex LIKE ? LIMIT 1",
+                                (fa_record_id[:6] + '%',)
+                            ).fetchone()
+                        if row is not None:
+                            record = dict(row)
+                            match_type = "feature_anchor"
+                            logger.info("Feature Anchor fallback matched record %s", record.get('id'))
+                except Exception as fa_exc:
+                    logger.warning("Feature Anchor record lookup failed: %s", fa_exc)
 
         if not record:
             return jsonify({
@@ -740,6 +857,8 @@ def legacy_verify():
             status = "verified"
         elif perceptual_match:
             status = "verified_modified"
+        elif match_type == "feature_anchor":
+            status = "verified_fragment"
         else:
             status = "tampered"
 
@@ -761,12 +880,14 @@ def legacy_verify():
                 "hydra_layers": {
                     k: {
                         "confidence": float(v.get("confidence", 0)),
-                        # Only show as "voted" (green tick) if we actually matched a real watermark payload
-                        "voted": bool(watermark_extracted and v.get("voted", False))
+                        # Show as voted if the individual layer successfully extracted the winning payload
+                        "voted": bool(v.get("voted", False))
                     } 
                     for k, v in hydra_breakdown.items()
                 },
             },
+            "tamper_map": tamper_map,
+            "feature_match": feature_match
         }), 200
     except Exception as exc:
         logger.error("Legacy verify error: %s", exc, exc_info=True)
@@ -775,6 +896,7 @@ def legacy_verify():
 
 # Keep existing provenance and report endpoints intact
 @api_bp.route("/provenance/<image_id>", methods=["GET"])
+@require_api_key(kind="verify")
 def get_provenance_legacy(image_id):
     """Legacy: retrieve provenance record by image_id."""
     from provena_flask.services.registry_service import RegistryService
@@ -797,6 +919,7 @@ def get_provenance_legacy(image_id):
 
 
 @api_bp.route("/report/<image_id>", methods=["GET"])
+@require_api_key(kind="verify")
 def get_forensic_report(image_id):
     """Legacy: generate forensic report."""
     try:
@@ -843,7 +966,7 @@ def _parse_image_from_request() -> tuple[Optional[bytes], Optional[str]]:
     return img_bytes, None
 
 
-def _open_image_safely(image_bytes: bytes) -> Image.Image:
+def _open_image_safely(image_bytes: bytes, enforce_min_size: bool = True) -> Image.Image:
     """
     Open a PIL image with safety checks (T-common-mistake-6).
     Raises ValueError on invalid format or size too small.
@@ -858,8 +981,9 @@ def _open_image_safely(image_bytes: bytes) -> Image.Image:
         raise ValueError(f"Unsupported image format: {img.format}")
 
     w, h = img.size
-    if w < MIN_DIM or h < MIN_DIM:
-        raise ValueError(f"Image too small (min {MIN_DIM}×{MIN_DIM}px); got {w}×{h}")
+    min_size = MIN_DIM if enforce_min_size else 32
+    if w < min_size or h < min_size:
+        raise ValueError(f"Image too small (min {min_size}×{min_size}px); got {w}×{h}")
 
     return img.convert("RGB")
 
@@ -972,6 +1096,8 @@ def _build_verify_response(
     hamming_dist: Optional[int],
     request_id: str,
     match_type: Optional[str] = None,
+    tamper_map: Optional[dict] = None,
+    feature_match: Optional[dict] = None,
 ):
     """Build the standardised verify JSON response."""
     body = {
@@ -990,6 +1116,22 @@ def _build_verify_response(
         body["model_id"]       = record.get("model_id")
         body["creator_did"]    = record.get("creator_did")
         body["manifest_id"]    = record.get("manifest_id")
+        
+        # Add original dimensions if present in custom_fields
+        c_fields = record.get("custom_fields")
+        if c_fields:
+            try:
+                import json
+                cf = json.loads(c_fields) if isinstance(c_fields, str) else c_fields
+                if "orig_width" in cf and "orig_height" in cf:
+                    body["orig_width"] = cf["orig_width"]
+                    body["orig_height"] = cf["orig_height"]
+            except Exception:
+                pass
+    if tamper_map:
+        body["tamper_map"] = tamper_map
+    if feature_match:
+        body["feature_match"] = feature_match
 
     return jsonify(body), 200, {"X-Request-ID": request_id}
 

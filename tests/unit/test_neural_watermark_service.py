@@ -22,13 +22,8 @@ from provena_flask.services.payload_codec import encode as encode_payload
 
 @pytest.fixture
 def sample_payload() -> bytes:
-    """A valid 32-byte payload."""
-    return encode_payload(
-        model_id_idx=7,
-        timestamp=1_710_000_000,
-        session_token=b"\xab\xcd\xef\x01\x23\x45\x67\x89",
-        phash_int=0xA0B1_C2D3_E4F5_0607,
-    )
+    """A valid 6-byte payload produced by the V1 encode API."""
+    return encode_payload(12345)
 
 
 @pytest.fixture

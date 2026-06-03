@@ -151,7 +151,7 @@ def lookup_key(plaintext: str) -> Optional[dict]:
         return None
 
     key_hash = _hash_key(plaintext)
-    logger.info("Auth lookup: plaintext=%s hash=%s", plaintext, key_hash)
+    logger.info("Auth lookup: hash=%s", key_hash)
 
     with db_module.get_connection() as conn:
         row = conn.execute(

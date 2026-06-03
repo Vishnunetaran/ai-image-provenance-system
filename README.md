@@ -1,44 +1,36 @@
-# PROVENA-FLASK: HydraWatermark V2
+# PROVENA-FLASK: HydraWatermark V4
 
-**AI Image Provenance & Triple-Redundant Forensic Verification System**
+**AI Image Provenance, SIFT-Homography & Multi-Layer Forensic Verification System**
 
-A state-of-the-art provenance tracking and forensic verification platform for AI-generated images. Provena V2 establishes a **Dual-Layered Forensic Truth** by combining unbreakable cryptographic metadata signatures (C2PA) with a highly resilient, triple-redundant pixel watermarking engine (HydraWatermark).
-
----
-
-## Overview
-
-PROVENA-FLASK is a comprehensive AI image provenance system designed to survive real-world hostile environments (social media compression, malicious cropping, metadata stripping). It guarantees origin traceability by anchoring the image identity in both the file structure and the pixels themselves.
-
-### The Dual-Layered Philosophy
-
-**Metadata + Pixels = Unbreakable Provenance**
-
-Where most systems rely *only* on fragile watermarks or *only* on easily-stripped metadata, Provena V2 marries the two into a single, cohesive verification mesh:
-
-1. **The Metadata Anchor (C2PA & Ed25519 Signatures)**: Injects an unforgeable, cryptographically signed manifest directly into the file's EXIF data. Survives pixel-level destruction (like heavy blurring or rotation).
-2. **The Pixel Anchor (HydraWatermark V2)**: Embeds a 48-bit payload directly into the image pixels using three independent mathematical domains. Survives metadata stripping (like uploading to Twitter or WhatsApp).
-3. **The Visual Anchor (pHash)**: Acts as a final safety net to catch visually identical images even if both the metadata and watermarks are destroyed.
+PROVENA-FLASK is a state-of-the-art provenance tracking, forensic localization, and tamper-verification platform for AI-generated images. Moving beyond fragile metadata or easily degraded watermarks, PROVENA V4 combines Elliptic Curve cryptographic metadata signatures (C2PA) with a highly resilient, five-layer pixel watermarking engine (HydraWatermark V3), SIFT-RANSAC homography alignment, and an adversarial self-hardening feedback loop.
 
 ---
 
-## What This System Proves
+## Key Highlights in V3 & V4
 
-### ✅ Pixel-Level Forensic Anchor (HydraWatermark)
-- **Triple-Redundant Resilience**: Embeds the origin payload simultaneously via Neural networks, Frequency modulation (DCT), and Spatial algorithms (LSB).
-- **Targeted Survivability**: Even if an attacker crops the image (destroying the spatial layer) or compresses it (destroying the frequency layer), the Neural layer survives and reconstructs the payload.
-- **Majority Vote Consensus**: Validates extraction using a robust consensus engine to filter out noise and false positives.
-
-### ✅ Cryptographic Truth (C2PA)
-- **Metadata Integrity**: Cryptographic proof that the image was registered with specific metadata (model, timestamp).
-- **Tamper Detection**: Metadata cannot be altered without invalidating the Ed25519 signature.
-- **Provenance Chain**: Complete audit trail stored in an append-only SQLite registry.
+1. **SIFT Keypoint & Homography Alignment**: Replaced legacy heuristic anchors with robust SIFT descriptors. If an image is cropped, scaled, rotated, or skewed, the system calculates the homography transform matrix $H$ and warps the query fragment back to the original registered coordinate space. This restores the pixel alignment necessary for downstream watermark extractors (DCT, Tiled DCT, Spatial) to succeed on heavy crops.
+2. **Tiled Holographic Watermarking**: Slides a 128x128 window with 50% overlap, embedding the full 48-bit payload independently into every tile. Uses Barker-13 synchronization codes to detect tile boundaries on severely cropped fragments.
+3. **Tamper Localization Grid**: Embeds cell-specific spatial payloads protected by CRC-8 checksums. Returns a pixel-perfect `tamper_map` showing exactly which parts of an image are authentic (green), altered (red), or represent unaligned crop margins (grey).
+4. **Watermark-Feature ID Cross-Verification (Splicing Detection)**: Detects watermark transfer/replay attacks by validating that the record ID extracted from the watermark payload matches the parent record ID retrieved by the SIFT features. Mismatches trigger a `TAMPERED` verdict.
+5. **Adversarial Self-Hardening Engine**: Tracks the last 1,000 verification outcomes in a rolling telemetry DB. Dynamically adjusts embedding strengths (quantization step size, spatial redundancy, tile overlap) based on attack classification (compression, noise, cropping).
+6. **Relaxed size limits for verification**: Registration strictly enforces a minimum image size of `256×256px` to ensure robust watermark capacity. However, verification bypasses this check, allowing small fragments down to `32×32px` to be aligned and verified.
 
 ---
 
-## Architecture
+## Dual-Layered Forensic Truth
 
-### System Flow (V2)
+Most systems rely solely on file metadata (which is immediately stripped by chat applications and social media platforms) or single-layer watermarks (which fail under heavy compression or cropping). PROVENA implements a multi-layer verification hierarchy:
+
+- **Tier 1 (Cryptographic)**: C2PA & Ed25519 signatures embedded in file EXIF data.
+- **Tier 2 (Pixel-Proof)**: Five-Layer HydraWatermark (Neural, DCT, Tiled DCT, Spatial, and Tamper Grid) evaluated using a consensus majority-vote engine.
+- **Tier 3 (Geometrical)**: SIFT Descriptor + RANSAC Homography validation.
+- **Tier 4 (Perceptual)**: 64-bit coarse pHash index fallback.
+
+---
+
+## System Architecture
+
+### Pipeline Flow
 
 ```mermaid
 graph TD
@@ -46,86 +38,66 @@ graph TD
     subgraph Registration Pipeline
         R_Input[Original Image] --> pHash[1. Calculate pHash]
         pHash --> C2PA_Embed[2. Inject C2PA Manifest]
-        C2PA_Embed --> Hydra_Embed[3. HydraWatermark Embed]
+        C2PA_Embed --> SIFT_Index[3. Index SIFT Keypoints]
+        SIFT_Index --> Hydra_Embed[4. HydraWatermark V3 Embed]
         
         subgraph Hydra Embed
-            H1[Neural TrustMark] --> H2[DCT Frequency] --> H3[Spatial LSB]
+            H1[Neural TrustMark]
+            H2[DCT Block QIM]
+            H3[Tiled Holographic DCT]
+            H4[Spatial LSB + ECC]
+            H5[Tamper Grid + CRC-8]
         end
-        
         Hydra_Embed --> R_Output[Final Watermarked Image]
     end
     
     %% Verification Flow
     subgraph Verification Pipeline
         V_Input[Query Image] --> C2PA_Check{1. C2PA Valid?}
-        V_Input --> Hydra_Extract[2. Hydra Extract]
+        C2PA_Check -->|No| SIFT_RANSAC{2. SIFT Homography?}
+        SIFT_RANSAC -->|Match & Warp| Hydra_Extract
+        SIFT_RANSAC -->|No Match| pHash_Check{3. pHash Match?}
         
-        subgraph Hydra Extract
-            E1[Neural] --> Vote[Majority Vote Engine]
-            E2[DCT] --> Vote
-            E3[Spatial] --> Vote
+        V_Input --> Hydra_Extract[4. Hydra Extraction Layers]
+        
+        subgraph Hydra Extraction Layers
+            E1[Neural TrustMark] --> Vote[Consensus Engine]
+            E2[DCT Block QIM] --> Vote
+            E3[Tiled Holographic DCT] --> Vote
+            E4[Spatial LSB + ECC] --> Vote
+            E5[Tamper Grid Validation] --> Vote
         end
         
-        V_Input --> pHash_Check[3. pHash Fallback]
+        Vote --> Splicing_Check{5. SIFT ID == Watermark ID?}
+        Splicing_Check -->|Mismatch| Verdict_Tamper[Verdict: SPLICED/TAMPERED]
+        Splicing_Check -->|Match| Verdict[Verdict: VERIFIED]
         
-        C2PA_Check -->|Match| Verdict[Final Verdict & Report]
-        Vote -->|Match| Verdict
-        pHash_Check -->|Match| Verdict
+        C2PA_Check -->|Valid| Splicing_Check
+        pHash_Check -->|Match| Verdict_Modified[Verdict: VERIFIED_MODIFIED]
+        pHash_Check -->|No Match| Verdict_Unreg[Verdict: UNREGISTERED]
     end
 ```
 
-### Verification Hierarchy
-
-**Tier 1 (Authoritative)**: Cryptographic Signature (C2PA) + Registry  
-**Tier 2 (Pixel-Proof)**: HydraWatermark Extraction (Majority Vote)  
-**Tier 3 (Fallback)**: Perceptual Hash Matching  
-
 ---
 
-## Key Features
+## Forensic Security Defenses
 
-### 🎨 Forensic Watermarking: HydraWatermark V2
-A state-of-the-art orchestration engine that layers three watermarks without visual interference:
-- **Neural Layer (Adobe TrustMark)**: A deep-learning encoder/decoder highly resistant to JPEG compression, resizing, and minor cropping.
-- **Frequency Layer (DCT Block QIM)**: Modulates 8x8 DCT blocks. Survives color shifts, blurring, and brightness attacks.
-- **Spatial Layer (LSB with Repetition ECC)**: A purely mathematical checksum embedded in the Least Significant Bits using a dimension-seeded PRNG. Acts as a lossless exact-match verification.
-- **Majority Vote Engine**: Intelligently aggregates the 48-bit extractions, requiring consensus to confidently verify the image origin.
+PROVENA V4 includes built-in algorithmic protections to survive adversarial environments:
 
-### ⚔️ The Adversarial Forge (`adversarial_forge.py`)
-A built-in stress-testing suite designed to simulate real-world hostile environments. The Forge automatically attacks the watermarked image using:
-- Heavy JPEG Compression (Q=50)
-- Gaussian Blurring
-- Malicious Cropping
-- Brightness / Contrast shifts
-- Gaussian Noise
-
-The Forge then runs the Verification pipeline against the damaged images to prove the resilience of the HydraWatermark layers.
-
-### 🔐 Cryptographic Provenance
-- **Ed25519 Digital Signatures**: Industry-standard elliptic curve cryptography.
-- **Append-Only Registry**: Tamper-evident SQLite database mapping payloads to origins.
-
----
-
-## Testing & Automation
-
-### Run the Adversarial Forge
-To prove the resilience of the watermarks against compression and filters:
-```bash
-python -m provena_flask.services.adversarial_forge
-```
-
-### Run the Hydra Round-Trip Test
-To verify that all 3 layers successfully embed and extract without corruption:
-```bash
-python test_hydra.py
-```
+* **DoS Keypoint Flooding Protection**: SIFT extractor caps keypoints to the top 1,000 using `nfeatures=1000`.
+* **Degenerate Homography Filtering**: Homography matrices ($H$) must pass determinant checks ($10^{-4} \le \text{det}(H_{2\times2}) \le 10^4$) and ensure projected coordinates form a convex polygon (`cv2.isContourConvex`).
+* **Ambiguous Pattern Rejection**: Rejects repetitive texture alignments using Lowe's Ratio Test ($0.75$).
+* **Rigid Inlier Threshold**: Enforces a minimum of 12 geometrically consistent inliers with a tight error margin ($5.0$ pixel tolerance).
+* **Flat/Low-Entropy Filter**: Skips feature alignment and registration on featureless/solid background images (evaluated in pixel-space standard deviation $\le 8.0$).
+* **Defensive Tamper Mapping**: Blocks all-zero payload false positives on unwatermarked images and handles extreme noise cases gracefully.
 
 ---
 
 ## API Usage (Python)
 
-### Register Image
+All API endpoints are protected using secure key authentication (registered keys are dynamically rate-limited).
+
+### 1. Register Image
 ```python
 import requests
 import base64
@@ -133,65 +105,49 @@ import base64
 with open('image.png', 'rb') as f:
     image_b64 = base64.b64encode(f.read()).decode()
 
-response = requests.post('http://localhost:5000/api/v1/images/register', json={
-    'image': image_b64,
-    'model_id': 'gpt-vision-v1',
-    'timestamp': '2026-05-05T19:00:00Z'
-})
+response = requests.post('http://localhost:5000/api/v1/images/register', 
+    headers={'Authorization': 'Bearer prov_sk_YOUR_SECRET_KEY'},
+    json={
+        'image': image_b64,
+        'model_id': 'gpt-vision-v1',
+        'timestamp': '2026-06-03T00:00:00Z'
+    }
+)
 
 result = response.json()
-print(f"Image ID: {result['image_id']}")
+print(f"Record Registered: {result['record_id']}")
 ```
 
-### Verify Image
+### 2. Verify Image
 ```python
-response = requests.post('http://localhost:5000/api/v1/images/verify', json={
-    'image': image_b64
-})
+response = requests.post('http://localhost:5000/api/v1/images/verify',
+    headers={'Authorization': 'Bearer prov_sk_YOUR_SECRET_KEY'},
+    json={
+        'image': image_b64
+    }
+)
 
 result = response.json()
-print(f"Verdict: {result['status']}")
-print(f"Signature Valid: {result['verification']['signature_valid']}")
-print(f"HydraWatermark Extracted: {result['verification']['watermark_extracted']}")
+print(f"Status: {result['status']}")
 print(f"Layer Breakdown: {result['verification']['hydra_layers']}")
 ```
 
 ---
 
-## Installation
+## Development & Test Automation
 
-### Prerequisites
-- Python 3.8+
-- PyTorch (for TrustMark Neural Layer)
-- OpenCV, Scipy, Numpy, Pillow
-
-### Setup
-
+Run unit and integration tests using pytest:
 ```bash
-git clone <repository-url>
-cd ai-image-provenance-system
-
-python -m venv venv
-# Windows: .\venv\Scripts\activate
-# Linux/Mac: source venv/bin/activate
-
-pip install -r requirements.txt
+python -m pytest tests/
 ```
 
-### Run Server
+To run the adversarial stress testing suite:
+```bash
+python -m provena_flask.services.adversarial_forge
+```
+
+To start the Flask development server:
 ```bash
 python run.py
 ```
-Server will start on `http://localhost:5000`. Navigate to the browser to access the sleek, visual Verification UI.
-
----
-
-## System Limitations (Honest Assessment)
-
-- **Complete Pixel Destruction**: If an image is heavily cropped *and* heavily compressed *and* resized simultaneously, the HydraWatermark may fail. The system will then fall back to the pHash (Perceptual Hash) to flag the image as "Modified".
-- **Blind Watermarking**: Extraction is "blind" (no original image reference), meaning it relies entirely on the surviving mathematical properties of the pixels.
-- **Timestamp Trust**: Timestamps are self-reported by the API caller during registration, not independently verified by a blockchain.
-
----
-
-**PROVENA-FLASK**: Establishing the ultimate forensic truth for AI-generated images.
+Then open `http://localhost:5000` to interact with the sleek neon-styled **anime.js-inspired forensic UI**, featuring live blueprint homography mappings and interactive canvas-rendered tamper localization maps.

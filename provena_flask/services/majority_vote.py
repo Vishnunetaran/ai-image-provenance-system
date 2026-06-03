@@ -22,6 +22,8 @@ class VoteResult:
     winner_votes: int                       # Number of layers that agree
     total_votes: int                        # Total layers that returned non-empty
     breakdown: dict = field(default_factory=dict)  # layer_name -> (payload_hex, confidence)
+    tamper_map: dict | None = None          # Tamper localization grid results (V3)
+    feature_match: dict | None = None       # Feature anchor matching results (V3)
 
 
 def vote(results: list[tuple[str, bytes, float]], min_confidence: float = 0.5) -> VoteResult:
