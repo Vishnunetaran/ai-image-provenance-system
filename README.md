@@ -150,4 +150,10 @@ To start the Flask development server:
 ```bash
 python run.py
 ```
-Then open `http://localhost:5000` to interact with the sleek neon-styled **anime.js-inspired forensic UI**, featuring live blueprint homography mappings and interactive canvas-rendered tamper localization maps.
+Then open `http://localhost:5000` to interact with the sleek **editorial red-and-black forensic UI**, featuring live blueprint homography mappings, interactive canvas-rendered tamper localization maps, and an animated particle constellation backdrop.
+
+---
+
+## Product Presentation & Sales Deck Prep
+For business stakeholders, pitch scripts, detailed acronym tables (C2PA, SIFT, RANSAC, DCT, QIM, LSB, ECC, CRC-8, pHash, EMA), and a complete Q&A prep sheet, refer to the [Product Presentation Guide](file:///C:/Users/vishn/.gemini/antigravity/brain/ff07b7f6-5e2c-4d1b-9ce9-9b5a0384d48d/product_presentation_guide.md) generated in your app data brain space.
+

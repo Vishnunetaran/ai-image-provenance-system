@@ -3,1832 +3,1311 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PROVENA — AI Image Provenance & Forensic Verification</title>
-    <meta name="description" content="PROVENA: Advanced AI image provenance and forensic verification system powered by HydraWatermark V3 with Neural, DCT, Tiled, Spatial, and Feature Anchor layers.">
+    <title>PROVENA — Forensic Provenance for AI Images</title>
+    <meta name="description" content="PROVENA V4: Cryptographic provenance, SIFT homography alignment, five-layer HydraWatermark, and pixel-perfect tamper localization for AI-generated images.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"></script>
     <style>
-        /* ══════════════════════════════════════════════
-           DESIGN SYSTEM — PROVENA V3
-           Inspired by anime.js aesthetic
-           ══════════════════════════════════════════════ */
-
         :root {
-            --bg-deep: #06060f;
-            --bg-card: rgba(15, 15, 35, 0.8);
-            --bg-card-solid: #0f0f23;
-            --bg-surface: rgba(20, 20, 50, 0.6);
-            --bg-surface-solid: #141432;
-            --border-subtle: rgba(99, 102, 241, 0.15);
-            --border-hover: rgba(99, 102, 241, 0.4);
-            --border-dim: rgba(148, 163, 184, 0.1);
-            --accent-indigo: #6366f1;
-            --accent-cyan: #06b6d4;
-            --accent-pink: #ec4899;
-            --accent-purple: #7c3aed;
-            --green: #10b981;
-            --green-glow: rgba(16, 185, 129, 0.2);
-            --green-bg: rgba(16, 185, 129, 0.08);
-            --red: #ef4444;
-            --red-glow: rgba(239, 68, 68, 0.2);
-            --red-bg: rgba(239, 68, 68, 0.08);
-            --amber: #f59e0b;
-            --amber-glow: rgba(245, 158, 11, 0.2);
-            --amber-bg: rgba(245, 158, 11, 0.08);
-            --text-primary: #e2e8f0;
-            --text-dim: #94a3b8;
-            --text-bright: #f8fafc;
-            --text-muted: #64748b;
-            --radius-card: 16px;
-            --radius-inner: 12px;
-            --radius-btn: 8px;
-            --shadow-card: 0 4px 30px rgba(0, 0, 0, 0.3);
-            --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.08);
-            --blur-card: blur(20px);
-            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --bg:           #0a0a0a;
+            --bg-elev:      #111111;
+            --bg-card:      #141414;
+            --bg-card-2:    #181818;
+            --accent:       #ff2d2d;
+            --accent-hover: #ff4747;
+            --accent-dim:   rgba(255,45,45,0.12);
+            --accent-glow:  rgba(255,45,45,0.4);
+            --text:         #fafafa;
+            --text-muted:   #8a8a8a;
+            --text-faint:   #4a4a4a;
+            --border:       #1f1f1f;
+            --border-strong:#2a2a2a;
+            --success:      #4ade80;
+            --warning:      #fbbf24;
+            --danger:       var(--accent);
+            --max:          1280px;
+        }
+        *{margin:0;padding:0;box-sizing:border-box;}
+        html{scroll-behavior:smooth;}
+        body{
+            font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+            background:var(--bg);color:var(--text);min-height:100vh;
+            line-height:1.5;-webkit-font-smoothing:antialiased;
+            -moz-osx-font-smoothing:grayscale;overflow-x:hidden;
+        }
+        .mono{font-family:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace;}
+        .accent{color:var(--accent);}
+
+        /* ── HEADER ─────────────────────────── */
+        .site-header{
+            position:sticky;top:0;z-index:100;
+            background:rgba(10,10,10,0.82);
+            backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+            border-bottom:1px solid var(--border);
+        }
+        .header-inner{
+            max-width:var(--max);margin:0 auto;padding:18px 32px;
+            display:flex;align-items:center;justify-content:space-between;
+        }
+        .wordmark{
+            display:flex;align-items:center;gap:10px;
+            font-weight:800;font-size:1.05rem;letter-spacing:.02em;
+            color:var(--text);text-decoration:none;
+        }
+        .wordmark-dot{
+            width:10px;height:10px;background:var(--accent);border-radius:50%;
+            box-shadow:0 0 16px var(--accent-glow);animation:pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse{
+            0%,100%{box-shadow:0 0 16px var(--accent-glow);}
+            50%{box-shadow:0 0 24px var(--accent),0 0 4px var(--accent);}
+        }
+        .header-nav{display:flex;align-items:center;gap:28px;}
+        .header-nav a{color:var(--text-muted);text-decoration:none;font-size:.9rem;font-weight:500;transition:color .15s;}
+        .header-nav a:hover{color:var(--text);}
+        .header-cta{
+            background:var(--accent);color:white;padding:9px 18px;
+            font-weight:600;font-size:.88rem;text-decoration:none;
+            border:none;cursor:pointer;transition:background .15s;
+        }
+        .header-cta:hover{background:var(--accent-hover);}
+
+        /* ── HERO ────────────────────────────── */
+        .hero{
+            max-width:var(--max);margin:0 auto;padding:112px 32px 80px;
+            position:relative;
+        }
+        #heroParticles{
+            position:absolute;top:0;left:0;width:100%;height:100%;
+            pointer-events:none;z-index:-1;opacity:0;transition:opacity .8s;
+        }
+        .anim-init{opacity:0;}
+        .hero-title .word{display:inline-block;opacity:0;transform:translateY(28px);margin-right:.18em;}
+        .hero-title .word:last-child{margin-right:0;}
+        .hero::before{
+            content:'';position:absolute;top:60px;right:32px;
+            width:320px;height:320px;
+            background:radial-gradient(circle at center,var(--accent-dim) 0%,transparent 70%);
+            pointer-events:none;z-index:-1;
+        }
+        .eyebrow{
+            display:inline-flex;align-items:center;gap:10px;
+            padding:7px 14px;border:1px solid var(--border-strong);border-radius:999px;
+            font-size:.78rem;color:var(--text-muted);margin-bottom:32px;letter-spacing:.02em;
+        }
+        .eyebrow::before{
+            content:'';width:6px;height:6px;background:var(--accent);
+            border-radius:50%;box-shadow:0 0 8px var(--accent);
+        }
+        .hero-title{
+            font-size:clamp(2.8rem,7.5vw,6rem);font-weight:900;
+            line-height:.96;letter-spacing:-.038em;margin-bottom:28px;max-width:14ch;
+        }
+        .hero-sub{
+            font-size:clamp(1.05rem,1.5vw,1.3rem);color:var(--text-muted);
+            max-width:62ch;margin-bottom:44px;line-height:1.55;
+        }
+        .hero-sub strong{color:var(--text);font-weight:600;}
+        .cta-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+        .btn-primary-lg{
+            background:var(--accent);color:white;padding:16px 32px;
+            font-weight:700;font-size:1rem;border:none;cursor:pointer;
+            text-decoration:none;display:inline-flex;align-items:center;gap:10px;
+            transition:background .15s,transform .15s;font-family:inherit;
+        }
+        .btn-primary-lg:hover{background:var(--accent-hover);transform:translateY(-1px);}
+        .btn-primary-lg .arrow{transition:transform .2s;}
+        .btn-primary-lg:hover .arrow{transform:translateX(4px);}
+        .btn-ghost-lg{
+            background:transparent;color:var(--text);padding:16px 32px;
+            font-weight:600;font-size:1rem;border:1px solid var(--border-strong);
+            cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:10px;
+            transition:border-color .15s,background .15s;font-family:inherit;
+        }
+        .btn-ghost-lg:hover{border-color:var(--accent);background:var(--accent-dim);}
+
+        /* ── STAT STRIP ─────────────────────── */
+        .stat-strip{
+            max-width:var(--max);margin:0 auto;padding:56px 32px;
+            border-top:1px solid var(--border);
+            display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+            background:linear-gradient(180deg,var(--bg) 0%,var(--bg-elev) 100%);
+        }
+        .stat{padding:8px 24px;border-left:1px solid var(--border);}
+        .stat:first-child{border-left:none;}
+        .stat-num{
+            font-size:clamp(2rem,3.5vw,2.6rem);font-weight:800;
+            letter-spacing:-.03em;color:var(--text);line-height:1;
+        }
+        .stat-num .unit{color:var(--accent);font-size:.7em;margin-left:2px;}
+        .stat-label{margin-top:10px;font-size:.78rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;}
+
+        /* ── SECTIONS ────────────────────────── */
+        .section{max-width:var(--max);margin:0 auto;padding:96px 32px;border-top:1px solid var(--border);}
+        .section-header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:24px;margin-bottom:56px;}
+        .section-label{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--accent);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px;}
+        .section-title{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.025em;line-height:1.05;max-width:18ch;}
+        .section-lede{color:var(--text-muted);font-size:1.05rem;line-height:1.55;max-width:42ch;}
+
+        /* ── PROBLEM ─────────────────────────── */
+        .problem-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);}
+        .problem-card{background:var(--bg-elev);padding:32px;}
+        .problem-card h3{font-size:1rem;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:12px;}
+        .problem-card h3::before{content:'✗';color:var(--accent);font-size:1.2rem;font-weight:900;}
+        .problem-card p{color:var(--text-muted);font-size:.93rem;line-height:1.6;}
+        .problem-card cite{display:block;margin-top:12px;color:var(--text-faint);font-size:.78rem;font-style:normal;font-family:'JetBrains Mono',monospace;}
+
+        /* ── FLOW ─────────────────────────────── */
+        .flow-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;}
+        .flow-step{border:1px solid var(--border);background:var(--bg-elev);padding:28px;position:relative;}
+        .flow-step-num{font-family:'JetBrains Mono',monospace;font-size:.78rem;font-weight:700;color:var(--accent);letter-spacing:.08em;margin-bottom:16px;}
+        .flow-step h3{font-size:1.15rem;font-weight:700;margin-bottom:10px;letter-spacing:-.01em;}
+        .flow-step p{color:var(--text-muted);font-size:.92rem;line-height:1.6;}
+        .flow-step code{font-family:'JetBrains Mono',monospace;background:var(--bg-card);padding:1px 6px;border-radius:3px;font-size:.85em;color:var(--text);}
+
+        /* ── SIGNALS ─────────────────────────── */
+        .signal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);}
+        .signal-card{background:var(--bg-elev);padding:28px;display:flex;flex-direction:column;gap:10px;transition:background .15s;}
+        .signal-card:hover{background:var(--bg-card-2);}
+        .signal-card.novel{background:linear-gradient(135deg,var(--bg-elev) 0%,rgba(255,45,45,.06) 100%);border-top:2px solid var(--accent);}
+        .signal-num{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--accent);font-weight:700;letter-spacing:.06em;}
+        .signal-name{font-family:'JetBrains Mono',monospace;font-size:1rem;font-weight:700;color:var(--text);}
+        .signal-card.novel .signal-name::after{
+            content:'NOVEL';margin-left:10px;padding:2px 8px;font-size:.62rem;
+            background:var(--accent);color:white;border-radius:3px;
+            font-weight:700;letter-spacing:.08em;vertical-align:middle;
+        }
+        .signal-desc{color:var(--text-muted);font-size:.9rem;line-height:1.55;}
+
+        /* ── CURTAIN (math) ────────────────── */
+        .curtain-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:28px;}
+        .curtain-card{background:var(--bg-elev);border:1px solid var(--border);padding:32px;position:relative;}
+        .curtain-card .tag{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;font-weight:700;margin-bottom:14px;padding:3px 10px;border:1px solid var(--accent);}
+        .curtain-card h3{font-size:1.35rem;font-weight:700;margin-bottom:16px;letter-spacing:-.015em;line-height:1.2;}
+        .curtain-card .analogy{color:var(--text);font-size:.96rem;line-height:1.65;margin-bottom:20px;padding-left:14px;border-left:3px solid var(--accent);}
+        .curtain-card p{color:var(--text-muted);font-size:.92rem;line-height:1.65;margin-bottom:14px;}
+        .curtain-card p strong{color:var(--text);font-weight:600;}
+        .curtain-card code{font-family:'JetBrains Mono',monospace;background:var(--bg-card);padding:1px 6px;border-radius:3px;font-size:.85em;color:var(--text);}
+
+        /* ── LIMITS ──────────────────────────── */
+        .limits-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;}
+        .limit-card{background:var(--bg-elev);border:1px solid var(--border);padding:24px;border-left:3px solid var(--accent);}
+        .limit-card h4{font-size:1rem;font-weight:700;margin-bottom:10px;color:var(--text);}
+        .limit-card p{color:var(--text-muted);font-size:.9rem;line-height:1.6;}
+
+        /* ── DEMO INTRO ─────────────────────── */
+        .demo-intro{max-width:var(--max);margin:0 auto;padding:72px 32px 24px;border-top:1px solid var(--border);}
+        .demo-intro-inner{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:24px;}
+        .app-section{max-width:var(--max);margin:0 auto;padding:16px 32px 112px;}
+        .app-card{background:var(--bg-elev);border:1px solid var(--border);padding:40px;}
+
+        /* ── UPLOAD ──────────────────────────── */
+        .upload-zone{
+            border:2px dashed var(--border-strong);padding:56px 24px;text-align:center;
+            cursor:pointer;transition:border-color .2s,background .2s;
+        }
+        .upload-zone:hover,.upload-zone.dragover{border-color:var(--accent);background:var(--accent-dim);}
+        .upload-icon{font-size:2.4rem;margin-bottom:16px;opacity:.7;}
+        .upload-zone h3{font-size:1.25rem;font-weight:700;margin-bottom:6px;}
+        .upload-zone p{color:var(--text-muted);font-size:.9rem;}
+        #fileInput{display:none;}
+        .preview-section{display:none;}
+        .preview-image{max-width:100%;max-height:420px;display:block;margin:0 auto 24px;border:1px solid var(--border);}
+        .button-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+        .btn{padding:12px 24px;border:none;font-size:.92rem;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s;font-family:inherit;}
+        .btn-primary{background:var(--accent);color:white;}
+        .btn-primary:hover{background:var(--accent-hover);}
+        .btn-secondary{background:transparent;color:var(--text);border:1px solid var(--border-strong);}
+        .btn-secondary:hover{border-color:var(--text);}
+        .btn:disabled{opacity:.4;cursor:not-allowed;}
+
+        /* ── LOADING — 5 layer rings ─────────── */
+        .loading{display:none;padding:40px 0;}
+        .loading-title{text-align:center;font-size:.78rem;font-family:'JetBrains Mono',monospace;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:32px;font-weight:700;}
+        .layer-list{display:flex;flex-direction:column;gap:16px;max-width:380px;margin:0 auto;}
+        .layer-item{display:flex;align-items:center;gap:16px;padding:14px 18px;border:1px solid var(--border);background:var(--bg-card);}
+        .layer-ring{width:32px;height:32px;flex-shrink:0;}
+        .layer-ring circle{fill:none;stroke:var(--border-strong);stroke-width:2.5;}
+        .layer-ring .ring-progress{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linecap:round;stroke-dasharray:88;stroke-dashoffset:88;transform-origin:center;transform:rotate(-90deg);}
+        .layer-name{font-family:'JetBrains Mono',monospace;font-size:.85rem;font-weight:600;color:var(--text);}
+        .layer-status{font-size:.72rem;color:var(--text-muted);margin-top:2px;}
+        .layer-item.active .ring-progress{animation:ringFill 1.2s ease forwards;}
+        .layer-item.done .ring-progress{stroke-dashoffset:0;stroke:var(--success);}
+        .layer-item.done .layer-name{color:var(--success);}
+        @keyframes ringFill{to{stroke-dashoffset:0;}}
+
+        /* ── RESULTS ─────────────────────────── */
+        .results-section{display:none;margin-top:32px;}
+        .alert{padding:14px 18px;margin-bottom:16px;border-left:3px solid;font-size:.92rem;background:var(--bg-card);}
+        .alert-success{border-color:var(--success);}
+        .alert-error{border-color:var(--accent);}
+        .result-card{background:var(--bg-card);border:1px solid var(--border);padding:24px;}
+        .result-card h3{font-size:1.05rem;font-weight:700;margin-bottom:16px;letter-spacing:-.01em;}
+        .result-card h4{font-size:.85rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-top:24px;margin-bottom:12px;}
+        .status-badge{display:inline-block;padding:6px 14px;font-family:'JetBrains Mono',monospace;font-size:.78rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:16px;}
+        .status-verified{background:rgba(74,222,128,.12);color:var(--success);border:1px solid rgba(74,222,128,.3);}
+        .status-tampered{background:var(--accent-dim);color:var(--accent);border:1px solid rgba(255,45,45,.3);}
+        .status-modified{background:rgba(251,191,36,.12);color:var(--warning);border:1px solid rgba(251,191,36,.3);}
+        .status-unregistered{background:rgba(138,138,138,.1);color:var(--text-muted);border:1px solid var(--border-strong);}
+        .info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);margin-top:12px;}
+        .info-item{background:var(--bg-elev);padding:14px 16px;}
+        .info-item label{display:block;font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;font-weight:600;}
+        .info-item value{font-family:'JetBrains Mono',monospace;font-size:.88rem;color:var(--text);font-weight:500;word-break:break-all;}
+        .layer-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);margin-top:12px;}
+        .layer-tile{background:var(--bg-elev);padding:14px 16px;}
+        .layer-tile label{display:block;font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;font-weight:600;}
+        .layer-tile .lpass{color:var(--success);font-family:'JetBrains Mono',monospace;font-size:.85rem;font-weight:700;}
+        .layer-tile .lfail{color:var(--text-faint);font-family:'JetBrains Mono',monospace;font-size:.85rem;font-weight:700;}
+        .tamper-canvas-wrap{margin-top:16px;}
+        .tamper-canvas-wrap h4{font-size:.85rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;}
+        #tamperCanvas{border:1px solid var(--border);display:block;}
+        .tamper-legend{display:flex;gap:16px;margin-top:10px;font-size:.78rem;color:var(--text-muted);}
+        .tamper-legend span{display:flex;align-items:center;gap:6px;}
+        .tamper-legend i{width:12px;height:12px;border-radius:2px;display:inline-block;}
+        .feature-match-wrap{margin-top:16px;padding:16px;border:1px solid var(--border);background:var(--bg-card);}
+        .feature-match-wrap h4{font-size:.85rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;}
+        .feature-match-info{font-family:'JetBrains Mono',monospace;font-size:.85rem;color:var(--text);line-height:1.7;}
+        .action-row{display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;}
+        .json-content{display:none;background:#050505;border:1px solid var(--border);color:#d4d4d4;padding:18px;overflow-x:auto;margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:.82rem;line-height:1.55;max-height:400px;overflow-y:auto;}
+
+        /* ── FOOTER ──────────────────────────── */
+        .site-footer{border-top:1px solid var(--border);padding:56px 32px 40px;background:var(--bg-elev);}
+        .footer-inner{max-width:var(--max);margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px;}
+        .footer-wordmark{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.95rem;color:var(--text);letter-spacing:.04em;}
+        .footer-meta{color:var(--text-faint);font-size:.82rem;}
+
+        /* ── SCROLL REVEAL ───────────────────── */
+        .reveal{opacity:0;transform:translateY(24px);transition:opacity .7s,transform .7s;}
+        .reveal.visible{opacity:1;transform:translateY(0);}
+
+        /* ── FRAGMENT VERDICT ─────────────────── */
+        .status-fragment{background:rgba(99,102,241,.1);color:#a5b4fc;border:1px solid rgba(99,102,241,.35);}
+        .fragment-note{
+            margin-top:14px;padding:12px 18px;background:rgba(255,45,45,.06);
+            border:1px solid rgba(255,45,45,.2);font-size:.85rem;color:var(--text);line-height:1.6;
+        }
+        .fragment-note strong{color:var(--accent);}
+        .match-tag{
+            display:inline-block;margin-top:10px;margin-bottom:4px;
+            padding:4px 14px;font-family:'JetBrains Mono',monospace;
+            font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+            background:rgba(255,45,45,.08);color:var(--accent);border:1px solid rgba(255,45,45,.25);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* ── LAYER CONFIDENCE BARS ────────────── */
+        .layers-panel{margin-top:24px;}
+        .layers-panel-title{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px;font-weight:700;}
+        .layer-row{
+            display:flex;align-items:center;gap:14px;
+            padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);
+            margin-bottom:6px;transition:border-color .15s;
+        }
+        .layer-row:hover{border-color:var(--border-strong);}
+        .layer-row-icon{font-size:1rem;flex-shrink:0;width:24px;text-align:center;}
+        .layer-row-info{flex:1;min-width:0;}
+        .layer-row-name{font-size:.85rem;font-weight:600;color:var(--text);margin-bottom:6px;}
+        .layer-bar-track{width:100%;height:4px;background:var(--border);overflow:hidden;}
+        .layer-bar-fill{height:100%;transition:width 1s cubic-bezier(.4,0,.2,1);}
+        .layer-bar-fill.green{background:linear-gradient(90deg,var(--success),#86efac);}
+        .layer-bar-fill.red{background:linear-gradient(90deg,var(--accent),#ff6b6b);}
+        .layer-bar-fill.amber{background:linear-gradient(90deg,var(--warning),#fcd34d);}
+        .layer-row-status{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
+        .layer-badge{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;padding:3px 10px;}
+        .layer-badge.pass{color:var(--success);background:rgba(74,222,128,.1);}
+        .layer-badge.fail{color:var(--accent);background:rgba(255,45,45,.1);}
+        .layer-conf-val{font-size:.7rem;color:var(--text-muted);font-weight:500;font-family:'JetBrains Mono',monospace;}
 
-        html { scroll-behavior: smooth; }
+        /* ── FEATURE CANVAS ──────────────────── */
+        .feature-canvas-wrap{display:none;margin-top:12px;border:1px solid var(--border);overflow:hidden;}
+        .feature-canvas-wrap canvas{display:block;max-width:100%;}
 
-        body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background: var(--bg-deep);
-            color: var(--text-primary);
-            min-height: 100vh;
-            line-height: 1.6;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            overflow-x: hidden;
-        }
+        /* ── PROVENANCE SECTION ───────────────── */
+        .provenance-section{margin-top:24px;}
+        .prov-title{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px;font-weight:700;}
 
-        /* ── Stagger Fade-in Animations ─────────── */
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(24px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to   { opacity: 1; }
-        }
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(16px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes pulseGlow {
-            0%, 100% { box-shadow: 0 0 20px var(--glow-color, rgba(99,102,241,0.15)); }
-            50%      { box-shadow: 0 0 35px var(--glow-color, rgba(99,102,241,0.3)); }
-        }
-        @keyframes dotFloat {
-            0%, 100% { transform: translateY(0); }
-            50%      { transform: translateY(-4px); }
-        }
-        @keyframes ringProgress {
-            from { stroke-dashoffset: 100; }
-        }
-        @keyframes barGrow {
-            from { width: 0%; }
-        }
-        @keyframes borderPulse {
-            0%, 100% { border-color: rgba(99, 102, 241, 0.2); }
-            50%      { border-color: rgba(99, 102, 241, 0.5); }
-        }
-        @keyframes gradientShift {
-            0%   { background-position: 0% 50%; }
-            50%  { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        @keyframes layerStagger1 { 0%, 60% { opacity: 0.3; } 10%, 50% { opacity: 1; } }
-        @keyframes layerStagger2 { 0%, 10%, 70% { opacity: 0.3; } 20%, 60% { opacity: 1; } }
-        @keyframes layerStagger3 { 0%, 20%, 80% { opacity: 0.3; } 30%, 70% { opacity: 1; } }
-        @keyframes layerStagger4 { 0%, 30%, 90% { opacity: 0.3; } 40%, 80% { opacity: 1; } }
-        @keyframes layerStagger5 { 0%, 40%, 100% { opacity: 0.3; } 50%, 90% { opacity: 1; } }
-        @keyframes ringSpin {
-            to { transform: rotate(360deg); }
-        }
-        @keyframes shimmer {
-            0%   { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-        }
-
-        .stagger-1 { animation: fadeInUp 0.6s ease-out 0.1s both; }
-        .stagger-2 { animation: fadeInUp 0.6s ease-out 0.2s both; }
-        .stagger-3 { animation: fadeInUp 0.6s ease-out 0.3s both; }
-        .stagger-4 { animation: fadeInUp 0.6s ease-out 0.4s both; }
-        .stagger-5 { animation: fadeInUp 0.6s ease-out 0.5s both; }
-
-        /* ══════════════════════════════════════════════
-           HERO HEADER
-           ══════════════════════════════════════════════ */
-        .hero {
-            position: relative;
-            width: 100%;
-            padding: 60px 20px 50px;
-            text-align: center;
-            overflow: hidden;
-        }
-
-        /* Animated Dot Grid Background */
-        .hero::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background-image:
-                radial-gradient(circle, rgba(99, 102, 241, 0.18) 1px, transparent 1px);
-            background-size: 32px 32px;
-            animation: dotFloat 6s ease-in-out infinite;
-            pointer-events: none;
-        }
-        .hero::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background:
-                radial-gradient(ellipse at 50% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 60%),
-                radial-gradient(ellipse at 20% 80%, rgba(6, 182, 212, 0.05) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 80%, rgba(236, 72, 153, 0.05) 0%, transparent 50%);
-            pointer-events: none;
-        }
-
-        .hero-content {
-            position: relative;
-            z-index: 1;
-        }
-
-        .hero-title {
-            font-size: clamp(2.8rem, 6vw, 4.5rem);
-            font-weight: 800;
-            letter-spacing: -0.04em;
-            line-height: 1.1;
-            background: linear-gradient(135deg, #6366f1 0%, #06b6d4 40%, #ec4899 80%, #6366f1 100%);
-            background-size: 200% auto;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: gradientShift 6s ease-in-out infinite, fadeInUp 0.8s ease-out both;
-        }
-
-        .hero-subtitle {
-            color: var(--text-dim);
-            font-size: clamp(0.9rem, 2vw, 1.1rem);
-            font-weight: 400;
-            margin-top: 10px;
-            letter-spacing: 0.01em;
-            animation: fadeInUp 0.8s ease-out 0.15s both;
-        }
-
-        .hero-badge {
-            display: inline-block;
-            margin-top: 16px;
-            padding: 6px 18px;
-            border-radius: 100px;
-            background: rgba(99, 102, 241, 0.1);
-            border: 1px solid rgba(99, 102, 241, 0.25);
-            color: #818cf8;
-            font-size: 0.78rem;
-            font-weight: 600;
-            letter-spacing: 0.05em;
-            animation: fadeInUp 0.8s ease-out 0.25s both;
-        }
-
-        /* Stat Counters */
-        .hero-stats {
-            display: flex;
-            justify-content: center;
-            gap: 32px;
-            margin-top: 28px;
-            flex-wrap: wrap;
-            animation: fadeInUp 0.8s ease-out 0.35s both;
-        }
-        .hero-stat {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-        }
-        .hero-stat-value {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--text-bright);
-        }
-        .hero-stat-label {
-            font-size: 0.72rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            font-weight: 500;
-        }
-        .hero-stat-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            margin-bottom: 4px;
-        }
-        .hero-stat-dot.indigo { background: var(--accent-indigo); box-shadow: 0 0 8px rgba(99,102,241,0.5); }
-        .hero-stat-dot.cyan { background: var(--accent-cyan); box-shadow: 0 0 8px rgba(6,182,212,0.5); }
-        .hero-stat-dot.pink { background: var(--accent-pink); box-shadow: 0 0 8px rgba(236,72,153,0.5); }
-
-        /* ══════════════════════════════════════════════
-           CONTAINER
-           ══════════════════════════════════════════════ */
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 0 20px 80px;
-        }
-
-        /* ══════════════════════════════════════════════
-           GLASSMORPHIC CARD
-           ══════════════════════════════════════════════ */
-        .card {
-            background: var(--bg-card);
-            backdrop-filter: var(--blur-card);
-            -webkit-backdrop-filter: var(--blur-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-card);
-            padding: 32px;
-            margin-bottom: 24px;
-            box-shadow: var(--shadow-card);
-            transition: var(--transition-smooth);
-        }
-        .card:hover {
-            border-color: var(--border-hover);
-        }
-
-        /* ══════════════════════════════════════════════
-           UPLOAD ZONE
-           ══════════════════════════════════════════════ */
-        .upload-zone {
-            border: 2px dashed rgba(99, 102, 241, 0.25);
-            border-radius: var(--radius-inner);
-            padding: 56px 24px;
-            text-align: center;
-            cursor: pointer;
-            transition: var(--transition-smooth);
-            position: relative;
-            overflow: hidden;
-        }
-        .upload-zone::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.04), transparent 70%);
-            transition: var(--transition-smooth);
-        }
-        .upload-zone:hover,
-        .upload-zone.dragover {
-            border-color: var(--accent-indigo);
-            background: rgba(99, 102, 241, 0.06);
-            animation: borderPulse 2s ease-in-out infinite;
-        }
-        .upload-zone:hover::before,
-        .upload-zone.dragover::before {
-            background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.08), transparent 70%);
-        }
-        .upload-icon {
-            font-size: 3rem;
-            margin-bottom: 14px;
-            display: block;
-            position: relative;
-            z-index: 1;
-            filter: grayscale(0.2);
-        }
-        .upload-zone h2 {
-            font-size: 1.15rem;
-            font-weight: 600;
-            color: var(--text-bright);
-            margin-bottom: 6px;
-            position: relative;
-            z-index: 1;
-        }
-        .upload-zone p {
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            position: relative;
-            z-index: 1;
-        }
-        #fileInput { display: none; }
-
-        /* ══════════════════════════════════════════════
-           PREVIEW AREA
-           ══════════════════════════════════════════════ */
-        .preview-area {
-            display: none;
-            text-align: center;
-            animation: fadeIn 0.4s ease-out;
-        }
-        .preview-container {
-            position: relative;
-            display: inline-block;
-            margin-bottom: 24px;
-        }
-        .preview-area img {
-            max-width: 100%;
-            max-height: 360px;
-            border-radius: var(--radius-inner);
-            border: 1px solid var(--border-subtle);
-            display: block;
-        }
-        .preview-label {
-            position: absolute;
-            top: 12px;
-            left: 12px;
-            background: rgba(6, 6, 15, 0.75);
-            backdrop-filter: blur(8px);
-            padding: 4px 12px;
-            border-radius: 6px;
-            font-size: 0.72rem;
-            font-weight: 600;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            border: 1px solid var(--border-dim);
-        }
-
-        /* ══════════════════════════════════════════════
-           BUTTONS
-           ══════════════════════════════════════════════ */
-        .btn-row {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        .btn {
-            padding: 12px 28px;
-            border: none;
-            border-radius: var(--radius-btn);
-            font-family: 'Inter', sans-serif;
-            font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition-smooth);
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            position: relative;
-            overflow: hidden;
-        }
-        .btn:disabled {
-            opacity: 0.35;
-            cursor: not-allowed;
-            transform: none !important;
-        }
-        .btn:active:not(:disabled) {
-            transform: scale(0.98) !important;
-        }
-
-        .btn-register {
-            background: linear-gradient(135deg, #6366f1, #7c3aed);
-            color: #fff;
-            box-shadow: 0 2px 12px rgba(99, 102, 241, 0.25);
-        }
-        .btn-register:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
-        }
-
-        .btn-verify {
-            background: linear-gradient(135deg, #06b6d4, #0d9488);
-            color: #fff;
-            box-shadow: 0 2px 12px rgba(6, 182, 212, 0.25);
-        }
-        .btn-verify:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(6, 182, 212, 0.4);
-        }
-
-        .btn-ghost {
-            background: transparent;
-            color: var(--text-muted);
-            border: 1px solid rgba(148, 163, 184, 0.15);
-        }
-        .btn-ghost:hover:not(:disabled) {
-            background: rgba(148, 163, 184, 0.06);
-            color: var(--text-dim);
-            border-color: rgba(148, 163, 184, 0.25);
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, var(--green), #059669);
-            color: #fff;
-            box-shadow: 0 2px 12px rgba(16, 185, 129, 0.25);
-        }
-        .btn-success:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
-        }
-
-        /* ══════════════════════════════════════════════
-           PROCESSING ANIMATION (Layer Stack)
-           ══════════════════════════════════════════════ */
-        .processing {
-            display: none;
-            padding: 32px 0;
-        }
-        .processing-title {
-            text-align: center;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--text-dim);
-            margin-bottom: 24px;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-        }
-        .processing-layers {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            max-width: 420px;
-            margin: 0 auto;
-        }
-        .processing-layer {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 12px 16px;
-            background: var(--bg-surface);
-            border-radius: var(--radius-btn);
-            border: 1px solid var(--border-dim);
-            opacity: 0.3;
-            transition: opacity 0.3s ease;
-        }
-        .processing-layer.active {
-            opacity: 1;
-            border-color: var(--border-subtle);
-        }
-        .processing-layer:nth-child(1) { animation: layerStagger1 4s ease-in-out infinite; }
-        .processing-layer:nth-child(2) { animation: layerStagger2 4s ease-in-out infinite; }
-        .processing-layer:nth-child(3) { animation: layerStagger3 4s ease-in-out infinite; }
-        .processing-layer:nth-child(4) { animation: layerStagger4 4s ease-in-out infinite; }
-        .processing-layer:nth-child(5) { animation: layerStagger5 4s ease-in-out infinite; }
-
-        .processing-ring {
-            width: 28px;
-            height: 28px;
-            flex-shrink: 0;
-        }
-        .processing-ring svg {
-            width: 28px;
-            height: 28px;
-            transform: rotate(-90deg);
-        }
-        .processing-ring-bg {
-            fill: none;
-            stroke: rgba(99, 102, 241, 0.1);
-            stroke-width: 3;
-        }
-        .processing-ring-fg {
-            fill: none;
-            stroke: var(--accent-indigo);
-            stroke-width: 3;
-            stroke-linecap: round;
-            stroke-dasharray: 70;
-            stroke-dashoffset: 70;
-            animation: ringProgress 1.2s ease-out forwards;
-        }
-        .processing-layer:nth-child(1) .processing-ring-fg { animation-delay: 0s; stroke: #818cf8; }
-        .processing-layer:nth-child(2) .processing-ring-fg { animation-delay: 0.3s; stroke: #06b6d4; }
-        .processing-layer:nth-child(3) .processing-ring-fg { animation-delay: 0.6s; stroke: #a78bfa; }
-        .processing-layer:nth-child(4) .processing-ring-fg { animation-delay: 0.9s; stroke: #f472b6; }
-        .processing-layer:nth-child(5) .processing-ring-fg { animation-delay: 1.2s; stroke: #fbbf24; }
-
-        .processing-layer-name {
-            flex: 1;
-            font-size: 0.82rem;
-            font-weight: 500;
-            color: var(--text-primary);
-        }
-        .processing-layer-tag {
-            font-size: 0.68rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-        }
-
-        /* ══════════════════════════════════════════════
-           RESULTS SECTION
-           ══════════════════════════════════════════════ */
-        .results {
-            display: none;
-            animation: slideUp 0.5s ease-out;
-        }
-
-        /* ── Alert ─────────────────────────────── */
-        .alert {
-            padding: 14px 20px;
-            border-radius: var(--radius-btn);
-            font-size: 0.88rem;
-            font-weight: 500;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            animation: fadeInUp 0.4s ease-out;
-        }
-        .alert-ok {
-            background: var(--green-bg);
-            color: var(--green);
-            border: 1px solid rgba(16, 185, 129, 0.2);
-        }
-        .alert-err {
-            background: var(--red-bg);
-            color: var(--red);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-        }
-
-        /* ── Status Verdict ────────────────────── */
-        .verdict-section {
-            text-align: center;
-            padding: 28px 20px;
-            margin-bottom: 24px;
-        }
-        .verdict-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 14px 32px;
-            border-radius: 100px;
-            font-weight: 700;
-            font-size: 1.1rem;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-            animation: pulseGlow 3s ease-in-out infinite;
-        }
-        .verdict-verified {
-            background: var(--green-bg);
-            color: var(--green);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            --glow-color: rgba(16, 185, 129, 0.2);
-        }
-        .verdict-modified {
-            background: var(--amber-bg);
-            color: var(--amber);
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            --glow-color: rgba(245, 158, 11, 0.2);
-        }
-        .verdict-tampered {
-            background: var(--red-bg);
-            color: var(--red);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            --glow-color: rgba(239, 68, 68, 0.2);
-        }
-        .verdict-unregistered {
-            background: rgba(148, 163, 184, 0.06);
-            color: var(--text-muted);
-            border: 1px solid rgba(148, 163, 184, 0.15);
-            --glow-color: rgba(148, 163, 184, 0.1);
-        }
-        .verdict-fragment {
-            background: rgba(99, 102, 241, 0.08);
-            color: #a5b4fc;
-            border: 1px solid rgba(99, 102, 241, 0.35);
-            --glow-color: rgba(99, 102, 241, 0.15);
-        }
-
-        .verdict-icon {
-            font-size: 1.4rem;
-        }
-
-        .match-tag {
-            display: inline-block;
-            margin-top: 12px;
-            padding: 4px 14px;
-            border-radius: 100px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            background: rgba(99, 102, 241, 0.1);
-            color: #818cf8;
-            border: 1px solid rgba(99, 102, 241, 0.25);
-        }
-
-        /* ── Verification Path Flow ────────────── */
-        .path-flow {
-            display: none;
-            margin-bottom: 24px;
-        }
-        .path-flow-title {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 14px;
-        }
-        .path-nodes {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0;
-            flex-wrap: wrap;
-            padding: 4px 0;
-        }
-        .path-node {
-            display: flex;
-            align-items: center;
-            gap: 0;
-        }
-        .path-node-circle {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.68rem;
-            font-weight: 700;
-            border: 2px solid;
-            transition: var(--transition-smooth);
-            position: relative;
-        }
-        .path-node-circle.active {
-            border-color: var(--green);
-            color: var(--green);
-            background: var(--green-bg);
-            box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
-        }
-        .path-node-circle.dim {
-            border-color: rgba(148, 163, 184, 0.15);
-            color: var(--text-muted);
-            background: rgba(148, 163, 184, 0.04);
-        }
-        .path-node-circle.winner {
-            border-color: var(--accent-indigo);
-            color: var(--accent-indigo);
-            background: rgba(99, 102, 241, 0.1);
-            box-shadow: 0 0 16px rgba(99, 102, 241, 0.3);
-        }
-        .path-connector {
-            width: 28px;
-            height: 2px;
-            background: rgba(148, 163, 184, 0.12);
-            flex-shrink: 0;
-        }
-        .path-connector.active {
-            background: linear-gradient(90deg, var(--green), rgba(16, 185, 129, 0.3));
-        }
-        .path-node-label {
-            position: absolute;
-            bottom: -20px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 0.6rem;
-            color: var(--text-muted);
-            white-space: nowrap;
-            font-weight: 500;
-            letter-spacing: 0.02em;
-        }
-
-        /* ── Layer Confidence Panel ─────────────── */
-        .layers-panel {
-            display: none;
-            margin-bottom: 24px;
-        }
-        .layers-title {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 14px;
-        }
-        .layer-row {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 14px 16px;
-            background: var(--bg-surface);
-            border-radius: var(--radius-btn);
-            margin-bottom: 8px;
-            border: 1px solid var(--border-dim);
-            transition: var(--transition-smooth);
-        }
-        .layer-row:hover {
-            border-color: var(--border-subtle);
-        }
-        .layer-icon {
-            font-size: 1.2rem;
-            flex-shrink: 0;
-            width: 28px;
-            text-align: center;
-        }
-        .layer-info {
-            flex: 1;
-            min-width: 0;
-        }
-        .layer-name {
-            font-size: 0.82rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 6px;
-        }
-        .layer-bar-track {
-            width: 100%;
-            height: 4px;
-            background: rgba(148, 163, 184, 0.1);
-            border-radius: 100px;
-            overflow: hidden;
-        }
-        .layer-bar-fill {
-            height: 100%;
-            border-radius: 100px;
-            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
-            animation: barGrow 1s ease-out;
-        }
-        .layer-bar-fill.green { background: linear-gradient(90deg, var(--green), #34d399); }
-        .layer-bar-fill.red { background: linear-gradient(90deg, var(--red), #f87171); }
-        .layer-bar-fill.amber { background: linear-gradient(90deg, var(--amber), #fbbf24); }
-
-        .layer-status {
-            flex-shrink: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 2px;
-        }
-        .layer-status-badge {
-            font-size: 0.72rem;
-            font-weight: 700;
-            padding: 3px 10px;
-            border-radius: 100px;
-        }
-        .layer-status-badge.pass {
-            color: var(--green);
-            background: var(--green-bg);
-        }
-        .layer-status-badge.fail {
-            color: var(--red);
-            background: var(--red-bg);
-        }
-        .layer-conf-value {
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            font-weight: 500;
-        }
-
-        /* ── Tamper Map ────────────────────────── */
-        .tamper-map-section {
-            display: none;
-            margin-bottom: 24px;
-        }
-        .tamper-map-title {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 14px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .tamper-map-container {
-            position: relative;
-            display: inline-block;
-            border-radius: var(--radius-inner);
-            overflow: hidden;
-            border: 1px solid var(--border-subtle);
-        }
-        .tamper-map-container canvas {
-            display: block;
-            max-width: 100%;
-        }
-        .tamper-stat {
-            margin-top: 12px;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-        .tamper-stat .authentic { color: var(--green); }
-        .tamper-stat .tampered { color: var(--red); }
-
-        /* ── Feature Match ─────────────────────── */
-        .feature-match-section {
-            display: none;
-            margin-bottom: 24px;
-        }
-        .feature-match-title {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 14px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .feature-match-info {
-            padding: 14px 18px;
-            background: var(--bg-surface);
-            border-radius: var(--radius-btn);
-            border: 1px solid var(--border-dim);
-            font-size: 0.85rem;
-            color: var(--text-primary);
-            margin-bottom: 14px;
-        }
-        .feature-match-info code {
-            font-family: 'Cascadia Code', 'Fira Code', 'SF Mono', monospace;
-            background: rgba(99, 102, 241, 0.1);
-            padding: 2px 7px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            color: #818cf8;
-        }
-        .feature-match-canvas-wrap {
-            position: relative;
-            display: inline-block;
-            border-radius: var(--radius-inner);
-            overflow: hidden;
-            border: 1px solid var(--border-subtle);
-        }
-        .feature-match-canvas-wrap canvas {
-            display: block;
-            max-width: 100%;
-        }
-
-        /* ── Info Grid (Provenance) ─────────────── */
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 10px;
-            margin-top: 16px;
-        }
-        .info-cell {
-            background: var(--bg-surface);
-            padding: 14px 16px;
-            border-radius: var(--radius-btn);
-            border: 1px solid var(--border-dim);
-            transition: var(--transition-smooth);
-        }
-        .info-cell:hover {
-            border-color: var(--border-subtle);
-        }
-        .info-cell .label {
-            font-size: 0.68rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 5px;
-            font-weight: 600;
-        }
-        .info-cell .value {
-            font-weight: 600;
-            font-size: 0.88rem;
-            color: var(--text-bright);
-            word-break: break-all;
-        }
-
-        /* ── Section Titles ─────────────────────── */
-        .section-title {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 14px;
-            margin-top: 24px;
-        }
-
-        /* ── Watermarked Image Panel ────────────── */
-        .wm-panel {
-            display: none;
-            margin-top: 24px;
-            padding: 24px;
-            background: rgba(16, 185, 129, 0.04);
-            border: 1px solid rgba(16, 185, 129, 0.15);
-            border-radius: var(--radius-card);
-            text-align: center;
-            animation: slideUp 0.4s ease-out;
-        }
-        .wm-panel h4 {
-            color: var(--green);
-            font-size: 0.88rem;
-            font-weight: 600;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        .wm-panel img {
-            max-width: 100%;
-            max-height: 280px;
-            border-radius: var(--radius-inner);
-            border: 1px solid rgba(16, 185, 129, 0.15);
-            margin-bottom: 16px;
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        .wm-hint {
-            font-size: 0.78rem;
-            color: var(--text-muted);
-            margin-top: 12px;
-            line-height: 1.5;
-        }
-
-        /* ── JSON Inspector ─────────────────────── */
-        .json-toggle-row {
-            margin-top: 20px;
-            display: flex;
-            justify-content: flex-start;
-        }
-        .json-block {
-            display: none;
-            margin-top: 12px;
-            background: #08090f;
-            border: 1px solid rgba(99, 102, 241, 0.1);
-            border-radius: var(--radius-btn);
-            padding: 20px;
-            font-family: 'Cascadia Code', 'Fira Code', 'SF Mono', monospace;
-            font-size: 0.78rem;
-            line-height: 1.7;
-            overflow-x: auto;
-            white-space: pre-wrap;
-            max-height: 420px;
-            overflow-y: auto;
-            color: #c9d1d9;
-            animation: fadeIn 0.3s ease-out;
-        }
-        /* JSON Syntax Highlighting */
-        .json-key { color: #7dd3fc; }
-        .json-string { color: #86efac; }
-        .json-number { color: #fbbf24; }
-        .json-boolean { color: #c084fc; }
-        .json-null { color: #94a3b8; }
-
-        /* ══════════════════════════════════════════════
-           SCROLLBAR
-           ══════════════════════════════════════════════ */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.2); border-radius: 100px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.35); }
-
-        /* ══════════════════════════════════════════════
-           RESPONSIVE
-           ══════════════════════════════════════════════ */
-        @media (max-width: 640px) {
-            .hero { padding: 40px 16px 32px; }
-            .hero-title { font-size: 2.4rem; }
-            .hero-stats { gap: 20px; }
-            .container { padding: 0 12px 60px; }
-            .card { padding: 20px; }
-            .upload-zone { padding: 40px 16px; }
-            .path-nodes { gap: 0; }
-            .path-connector { width: 14px; }
-            .path-node-circle { width: 32px; height: 32px; font-size: 0.6rem; }
-            .info-grid { grid-template-columns: 1fr; }
-            .btn { padding: 10px 20px; font-size: 0.85rem; }
-        }
-
-        /* ══════════════════════════════════════════════
-           DIVIDER
-           ══════════════════════════════════════════════ */
-        .divider {
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--border-subtle), transparent);
-            margin: 24px 0;
-        }
-
-        /* ══════════════════════════════════════════════
-           FOOTER
-           ══════════════════════════════════════════════ */
-        .footer {
-            text-align: center;
-            padding: 20px;
-            font-size: 0.72rem;
-            color: var(--text-muted);
-            letter-spacing: 0.04em;
-        }
-        .footer a {
-            color: #818cf8;
-            text-decoration: none;
-        }
-        .footer a:hover {
-            text-decoration: underline;
+        /* ── RESPONSIVE ──────────────────────── */
+        @media(max-width:640px){
+            .app-card{padding:24px;}
+            .hero{padding:72px 24px 56px;}
+            .section{padding:64px 24px;}
+            .header-inner{padding:16px 20px;}
+            .header-nav a:not(.header-cta){display:none;}
         }
     </style>
 </head>
-
 <body>
-    <!-- ═══════════════════════════════════════════
-         HERO HEADER
-         ═══════════════════════════════════════════ -->
-    <header class="hero" role="banner">
-        <div class="hero-content">
-            <h1 class="hero-title stagger-1" id="heroTitle">PROVENA</h1>
-            <p class="hero-subtitle stagger-2">AI Image Provenance &amp; Forensic Verification</p>
-            <span class="hero-badge stagger-3">HydraWatermark V3 — Neural + DCT + Tiled + Spatial</span>
-            <nav class="hero-stats stagger-4" aria-label="System capabilities">
-                <div class="hero-stat">
-                    <span class="hero-stat-dot indigo"></span>
-                    <span class="hero-stat-value" id="statPaths">5</span>
-                    <span class="hero-stat-label">Verification Paths</span>
-                </div>
-                <div class="hero-stat">
-                    <span class="hero-stat-dot cyan"></span>
-                    <span class="hero-stat-value" id="statTamper">Tamper</span>
-                    <span class="hero-stat-label">Localization</span>
-                </div>
-                <div class="hero-stat">
-                    <span class="hero-stat-dot pink"></span>
-                    <span class="hero-stat-value" id="statFragment">Fragment</span>
-                    <span class="hero-stat-label">Matching</span>
-                </div>
-            </nav>
+
+<!-- ═══ HEADER ═══════════════════════════════════════════════ -->
+<header class="site-header">
+    <div class="header-inner">
+        <a href="#" class="wordmark">
+            <span class="wordmark-dot"></span>
+            <span>PROVENA</span>
+        </a>
+        <nav class="header-nav">
+            <a href="#how">How it works</a>
+            <a href="#math">The math</a>
+            <a href="#receipt">Receipt</a>
+            <a href="#app" class="header-cta">Try Now</a>
+        </nav>
+    </div>
+</header>
+
+<!-- ═══ HERO ══════════════════════════════════════════════════ -->
+<section class="hero" id="home">
+    <canvas id="heroParticles"></canvas>
+    <div class="eyebrow mono anim-init" id="heroEyebrow">HYDRAWATERMARK V4 · SIFT HOMOGRAPHY · RESEARCH BUILD</div>
+    <h1 class="hero-title" id="heroTitle">
+        <span class="word">Forensic</span>
+        <span class="word">proof</span>
+        <span class="word">for</span>
+        <span class="word accent">AI&nbsp;images.</span>
+    </h1>
+    <p class="hero-sub anim-init" id="heroSub">
+        Drop in any AI-generated image. Get back a <strong>Forensic Receipt</strong> — cryptographic proof, five independently-redundant watermark layers, pixel-perfect tamper localization, and geometric fragment matching — even on heavily cropped screenshots.
+    </p>
+    <div class="cta-row">
+        <a href="#app" class="btn-primary-lg anim-init">
+            Try it now <span class="arrow">→</span>
+        </a>
+        <a href="#how" class="btn-ghost-lg anim-init">How it works</a>
+    </div>
+</section>
+
+<!-- ═══ STAT STRIP ═════════════════════════════════════════════ -->
+<section class="stat-strip reveal">
+    <div class="stat">
+        <div class="stat-num" data-target="5" data-format="int">0</div>
+        <div class="stat-label">Watermark layers</div>
+    </div>
+    <div class="stat">
+        <div class="stat-num">SIFT</div>
+        <div class="stat-label">RANSAC Homography Alignment</div>
+    </div>
+    <div class="stat">
+        <div class="stat-num" data-target="12" data-format="int">0</div>
+        <div class="stat-label">Min geometric inliers</div>
+    </div>
+    <div class="stat">
+        <div class="stat-num">Ed25519</div>
+        <div class="stat-label">Signature primitive</div>
+    </div>
+</section>
+
+<!-- ═══ PROBLEM ════════════════════════════════════════════════ -->
+<section class="section reveal" id="problem">
+    <div class="section-header">
+        <div>
+            <div class="section-label">01 · The problem</div>
+            <h2 class="section-title">Five attack surfaces. Our system defends all of them.</h2>
         </div>
-    </header>
+        <p class="section-lede">
+            AI-generated media is moving faster than the trust infrastructure around it. Most provenance systems fail against even basic attacks.
+        </p>
+    </div>
+    <div class="problem-grid">
+        <div class="problem-card">
+            <h3>Watermarks die under compression</h3>
+            <p>TrustMark, SynthID, Stable Signature all decode to near-zero under diffusion regeneration. Robust against mild JPEG — fragile against the next image model.</p>
+            <cite>arxiv 2510.05978 · 2511.05598 · WAVES (NSF)</cite>
+        </div>
+        <div class="problem-card">
+            <h3>Metadata strips on every platform</h3>
+            <p>C2PA manifests are immediately stripped by Twitter, WhatsApp, Instagram, and every social media upload pipeline. One re-share destroys the entire metadata chain.</p>
+            <cite>arxiv 2604.24890 · NSA CSI 2025</cite>
+        </div>
+        <div class="problem-card">
+            <h3>Cropped fragments lose provenance</h3>
+            <p>A 200×200px screenshot crop destroys all classic watermarks. No existing system can recover provenance from a fragment without the original image as reference.</p>
+            <cite>The gap SIFT homography solves.</cite>
+        </div>
+        <div class="problem-card">
+            <h3>Splicing attacks bypass registry</h3>
+            <p>Attackers transfer watermarks from a registered image to a different tampered image to fake provenance. Standard systems cannot detect this swap.</p>
+            <cite>Solved by SIFT ID ↔ watermark payload cross-check.</cite>
+        </div>
+    </div>
+</section>
 
-    <!-- ═══════════════════════════════════════════
-         MAIN CONTENT
-         ═══════════════════════════════════════════ -->
-    <main class="container" role="main">
+<!-- ═══ HOW IT WORKS ═══════════════════════════════════════════ -->
+<section class="section reveal" id="how">
+    <div class="section-header">
+        <div>
+            <div class="section-label">02 · How it works</div>
+            <h2 class="section-title">Register once. Verify anything.</h2>
+        </div>
+        <p class="section-lede">
+            PROVENA stamps an image with cryptographic proof and five invisible watermarks at registration, then runs a full forensic battery at verification — even on cropped screenshots.
+        </p>
+    </div>
+    <div class="flow-grid">
+        <div class="flow-step">
+            <div class="flow-step-num">STEP 01 / REGISTER</div>
+            <h3>Sign, stamp &amp; index</h3>
+            <p>The image is hashed perceptually (<code>pHash</code>), the metadata is signed with <code>Ed25519</code> into a C2PA-shaped manifest, and <strong>1,000 SIFT keypoints</strong> are indexed for fragment retrieval. Then the <strong>HydraWatermark V4</strong> runs five layers sequentially: Neural TrustMark, DCT Block QIM, Tiled Holographic DCT, Spatial LSB+ECC, and Tamper Grid CRC-8. The record lands in the append-only SQLite registry.</p>
+        </div>
+        <div class="flow-step">
+            <div class="flow-step-num">STEP 02 / SURVIVE</div>
+            <h3>Survive the wild</h3>
+            <p>The watermarked image travels through JPEG re-encodes, social media pipelines, format conversions, screenshots, and crops. Some layers survive cleanly. Some degrade. <strong>SIFT keypoints survive everything short of full pixel destruction</strong> — they are geometry, not pixels. The system reports exactly what it sees.</p>
+        </div>
+        <div class="flow-step">
+            <div class="flow-step-num">STEP 03 / VERIFY</div>
+            <h3>Read the forensic receipt</h3>
+            <p>On verification, every signal probes independently. SIFT extracts keypoints from the query, RANSAC finds homography matrix <strong>H</strong>, and the fragment is warped back to original coordinates. All five watermark layers then extract and vote. <strong>Splicing is detected</strong> by cross-checking the SIFT record ID against the watermark payload ID — a mismatch is proof of tampering.</p>
+        </div>
+    </div>
+</section>
 
-        <!-- Upload Card -->
-        <section class="card stagger-5" id="uploadCard" aria-label="Image upload">
-            <!-- Upload Zone -->
-            <div class="upload-zone" id="uploadZone" role="button" tabindex="0" aria-label="Upload an image by clicking or dragging">
-                <span class="upload-icon" aria-hidden="true">🔬</span>
-                <h2>Upload an Image</h2>
-                <p>Drag &amp; drop or click to select — PNG, JPG, WebP</p>
-                <input type="file" id="fileInput" accept="image/*" aria-label="Select image file">
+<!-- ═══ THE MATH ════════════════════════════════════════════════ -->
+<section class="section reveal" id="math">
+    <div class="section-header">
+        <div>
+            <div class="section-label">03 · The math, in plain English</div>
+            <h2 class="section-title">What's actually inside the receipt?</h2>
+        </div>
+        <p class="section-lede">
+            Two core innovations do most of the work. One is an old technique made holographic; one is a geometric primitive nobody applies to watermark recovery this way.
+        </p>
+    </div>
+    <div class="curtain-grid">
+        <div class="curtain-card">
+            <span class="tag">HydraWatermark V4 · 5 layers</span>
+            <h3>Five independent watermarks. An attacker has to defeat all five simultaneously.</h3>
+            <div class="analogy">
+                Like a painting with five hidden signatures in different media — ink, UV, magnetic, microprint, and chemical. Each lives in a different mathematical domain. To erase provenance cleanly, every one must be found and removed at the same time.
             </div>
+            <p><strong>Layer 1 · Neural (TrustMark).</strong> A learned encoder/decoder network hiding 48 bits of payload in image features. Trained to survive JPEG compression, crops, and social-media re-encodes.</p>
+            <p><strong>Layer 2 · DCT Block QIM.</strong> Modulates 8×8 DCT coefficients in the frequency domain. Resilient to spatial attacks like blur and mild rotation.</p>
+            <p><strong>Layer 3 · Tiled Holographic DCT.</strong> Slides a 128×128 window at 50% overlap — each tile independently encodes the full 48-bit payload. Barker-13 sync codes detect tile boundaries after severe crops.</p>
+            <p><strong>Layer 4 · Spatial LSB + ECC.</strong> Pixel-level least-significant-bit modulation seeded by image dimensions, protected by Reed-Solomon error correction. The fallback signal of last resort.</p>
+            <p><strong>Layer 5 · Tamper Grid CRC-8.</strong> Divides the image into an adaptive grid; each cell encodes position + record ID + CRC-8 checksum. Returns a pixel-perfect <code>tamper_map</code> showing which regions are authentic and which are modified.</p>
+        </div>
+        <div class="curtain-card">
+            <span class="tag">SIFT Homography · Geometric Alignment · novel</span>
+            <h3>Fragment matching without the watermark: SIFT keypoints survive everything.</h3>
+            <div class="analogy">
+                Like a detective matching a cropped witness photo to a full CCTV frame using distinctive features — a scar, a tattoo, a jacket pattern. No matter how the crop is framed, the geometric features still align.
+            </div>
+            <p><strong>Keypoint extraction.</strong> SIFT extracts up to 1,000 stable keypoints + 128-dimensional descriptors per image. Capped by <code>nfeatures=1000</code> to prevent DoS flooding.</p>
+            <p><strong>Lowe's Ratio Test (0.75).</strong> Filters ambiguous, repetitive, and near-collinear descriptor matches before RANSAC runs.</p>
+            <p><strong>RANSAC Homography.</strong> Finds 4-DOF perspective transform matrix <strong>H</strong> with ≥12 geometrically consistent inliers at 5px error tolerance. H is validated: positive determinant (10⁻⁴ to 10⁴), convex projected polygon.</p>
+            <p><strong>Splicing detection.</strong> The record ID extracted from the watermark payload is cross-checked against the record matched by SIFT. A mismatch is definitive proof of a watermark transfer attack → verdict <code>TAMPERED</code>.</p>
+        </div>
+    </div>
+</section>
 
-            <!-- Preview -->
-            <div class="preview-area" id="previewArea">
-                <div class="preview-container">
-                    <img id="previewImg" alt="Uploaded image preview">
-                    <span class="preview-label">Preview</span>
+<!-- ═══ SIGNALS / RECEIPT ═══════════════════════════════════════ -->
+<section class="section reveal" id="receipt">
+    <div class="section-header">
+        <div>
+            <div class="section-label">04 · The Forensic Receipt</div>
+            <h2 class="section-title">Seven signals. None of them lie.</h2>
+        </div>
+        <p class="section-lede">
+            Every signal reports independently. Humans interpret the receipt — the system never invents a verdict.
+        </p>
+    </div>
+    <div class="signal-grid">
+        <div class="signal-card">
+            <div class="signal-num">01</div>
+            <div class="signal-name">c2pa_manifest</div>
+            <p class="signal-desc">Is there an Ed25519-signed C2PA manifest in the file's EXIF, and does its signature verify against this image's perceptual hash?</p>
+        </div>
+        <div class="signal-card">
+            <div class="signal-num">02</div>
+            <div class="signal-name">neural_trustmark</div>
+            <p class="signal-desc">Did the TrustMark neural decoder extract a valid 48-bit payload that resolves to a registry record? Survives JPEG and mild crops.</p>
+        </div>
+        <div class="signal-card">
+            <div class="signal-num">03</div>
+            <div class="signal-name">dct_block_qim</div>
+            <p class="signal-desc">Did the frequency-domain QIM extractor recover the payload from 8×8 DCT blocks? Resilient to spatial attacks like blur and noise.</p>
+        </div>
+        <div class="signal-card novel">
+            <div class="signal-num">04</div>
+            <div class="signal-name">tiled_holographic</div>
+            <p class="signal-desc">Holographic 128×128 sliding-window extraction with Barker-13 sync detection. Recovers payload from severely cropped fragments that break all other layers.</p>
+        </div>
+        <div class="signal-card novel">
+            <div class="signal-num">05</div>
+            <div class="signal-name">tamper_grid</div>
+            <p class="signal-desc">Per-cell CRC-8 verification across an adaptive grid. Returns a pixel-perfect map of which regions are authentic, tampered, or outside the aligned crop.</p>
+        </div>
+        <div class="signal-card novel">
+            <div class="signal-num">06</div>
+            <div class="signal-name">sift_homography</div>
+            <p class="signal-desc">SIFT keypoint + RANSAC homography geometric alignment. Finds the parent image from a cropped screenshot, warps it back, and cross-checks for splicing attacks.</p>
+        </div>
+        <div class="signal-card">
+            <div class="signal-num">07</div>
+            <div class="signal-name">phash_registry</div>
+            <p class="signal-desc">64-bit perceptual hash Hamming-distance fallback. Matches near-duplicate images even when all watermarks and metadata are destroyed.</p>
+        </div>
+    </div>
+</section>
+
+<!-- ═══ LIMITS ══════════════════════════════════════════════════ -->
+<section class="section reveal" id="limits">
+    <div class="section-header">
+        <div>
+            <div class="section-label">05 · Honest limits</div>
+            <h2 class="section-title">What PROVENA does <span class="accent">not</span> claim.</h2>
+        </div>
+        <p class="section-lede">
+            Marketing tone is for vendors. Real systems disclose exactly where they break.
+        </p>
+    </div>
+    <div class="limits-grid">
+        <div class="limit-card">
+            <h4>Not regeneration-proof</h4>
+            <p>Guided-diffusion image regeneration destroys all current watermarks including ours. This is an open research problem. No system defeats it today.</p>
+        </div>
+        <div class="limit-card">
+            <h4>SIFT requires texture</h4>
+            <p>Featureless or uniform images — solid gradients, blank backgrounds — produce fewer than 12 keypoints. Geometric fragment matching cannot be performed on flat images.</p>
+        </div>
+        <div class="limit-card">
+            <h4>Timestamps are self-reported</h4>
+            <p>We cryptographically bind timestamps into the Ed25519 signature, but we do not independently verify when an image was generated. A caller can lie about the timestamp.</p>
+        </div>
+        <div class="limit-card">
+            <h4>Not federated</h4>
+            <p>The registry is local. Cross-operator attestation — a Provenance Mesh — is architecturally planned but not yet built. There is no single source of truth across operators.</p>
+        </div>
+    </div>
+</section>
+
+<!-- ═══ DEMO INTRO ══════════════════════════════════════════════ -->
+<div class="demo-intro reveal">
+    <div class="demo-intro-inner">
+        <div>
+            <div class="section-label">↓ Live demo</div>
+            <h2 class="section-title" style="margin-top:14px;">Register or verify an image.</h2>
+        </div>
+        <p class="section-lede">
+            Drop in a PNG or JPEG. Register it to mint a provenance record with all five watermark layers, or verify one you've already registered.
+        </p>
+    </div>
+</div>
+
+<!-- ═══ APP ════════════════════════════════════════════════════ -->
+<section class="app-section" id="app">
+    <div class="app-card">
+
+        <!-- Upload zone -->
+        <div class="upload-zone" id="uploadSection">
+            <div class="upload-icon">↑</div>
+            <h3>Upload an image</h3>
+            <p>Drag &amp; drop or click to select · PNG, JPG, WebP · up to 16&nbsp;MB</p>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+
+        <!-- Preview + actions -->
+        <div class="preview-section" id="previewSection">
+            <img id="previewImage" class="preview-image" alt="Preview">
+            <div class="button-row">
+                <button class="btn btn-primary" id="registerBtn">⚡ Register</button>
+                <button class="btn btn-primary" id="verifyBtn">🔍 Verify</button>
+                <button class="btn btn-secondary" id="clearBtn">Clear</button>
+            </div>
+        </div>
+
+        <!-- Loading — 5 layer rings -->
+        <div class="loading" id="loading">
+            <div class="loading-title">Processing forensic layers</div>
+            <div class="layer-list" id="layerList">
+                <div class="layer-item" id="ll0">
+                    <svg class="layer-ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="14"/><circle class="ring-progress" cx="18" cy="18" r="14"/></svg>
+                    <div><div class="layer-name">Neural (TrustMark)</div><div class="layer-status">Awaiting…</div></div>
                 </div>
-                <div class="btn-row">
-                    <button class="btn btn-register" id="registerBtn" type="button">⚡ Register</button>
-                    <button class="btn btn-verify" id="verifyBtn" type="button">🔍 Verify</button>
-                    <button class="btn btn-ghost" id="clearBtn" type="button">✕ Clear</button>
+                <div class="layer-item" id="ll1">
+                    <svg class="layer-ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="14"/><circle class="ring-progress" cx="18" cy="18" r="14"/></svg>
+                    <div><div class="layer-name">DCT Block QIM</div><div class="layer-status">Awaiting…</div></div>
+                </div>
+                <div class="layer-item" id="ll2">
+                    <svg class="layer-ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="14"/><circle class="ring-progress" cx="18" cy="18" r="14"/></svg>
+                    <div><div class="layer-name">Tiled Holographic DCT</div><div class="layer-status">Awaiting…</div></div>
+                </div>
+                <div class="layer-item" id="ll3">
+                    <svg class="layer-ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="14"/><circle class="ring-progress" cx="18" cy="18" r="14"/></svg>
+                    <div><div class="layer-name">Spatial LSB + ECC</div><div class="layer-status">Awaiting…</div></div>
+                </div>
+                <div class="layer-item" id="ll4">
+                    <svg class="layer-ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="14"/><circle class="ring-progress" cx="18" cy="18" r="14"/></svg>
+                    <div><div class="layer-name">SIFT Homography</div><div class="layer-status">Awaiting…</div></div>
                 </div>
             </div>
+        </div>
 
-            <!-- Processing Animation -->
-            <div class="processing" id="processing" role="status" aria-live="polite">
-                <div class="processing-title" id="processingTitle">Processing Layers</div>
-                <div class="processing-layers">
-                    <div class="processing-layer">
-                        <div class="processing-ring">
-                            <svg viewBox="0 0 28 28"><circle class="processing-ring-bg" cx="14" cy="14" r="11"/><circle class="processing-ring-fg" cx="14" cy="14" r="11"/></svg>
-                        </div>
-                        <span class="processing-layer-name">Neural (TrustMark)</span>
-                        <span class="processing-layer-tag">Layer 1</span>
-                    </div>
-                    <div class="processing-layer">
-                        <div class="processing-ring">
-                            <svg viewBox="0 0 28 28"><circle class="processing-ring-bg" cx="14" cy="14" r="11"/><circle class="processing-ring-fg" cx="14" cy="14" r="11"/></svg>
-                        </div>
-                        <span class="processing-layer-name">DCT (Frequency)</span>
-                        <span class="processing-layer-tag">Layer 2</span>
-                    </div>
-                    <div class="processing-layer">
-                        <div class="processing-ring">
-                            <svg viewBox="0 0 28 28"><circle class="processing-ring-bg" cx="14" cy="14" r="11"/><circle class="processing-ring-fg" cx="14" cy="14" r="11"/></svg>
-                        </div>
-                        <span class="processing-layer-name">Tiled DCT (Holographic)</span>
-                        <span class="processing-layer-tag">Layer 3</span>
-                    </div>
-                    <div class="processing-layer">
-                        <div class="processing-ring">
-                            <svg viewBox="0 0 28 28"><circle class="processing-ring-bg" cx="14" cy="14" r="11"/><circle class="processing-ring-fg" cx="14" cy="14" r="11"/></svg>
-                        </div>
-                        <span class="processing-layer-name">Spatial (LSB+ECC)</span>
-                        <span class="processing-layer-tag">Layer 4</span>
-                    </div>
-                    <div class="processing-layer">
-                        <div class="processing-ring">
-                            <svg viewBox="0 0 28 28"><circle class="processing-ring-bg" cx="14" cy="14" r="11"/><circle class="processing-ring-fg" cx="14" cy="14" r="11"/></svg>
-                        </div>
-                        <span class="processing-layer-name">Feature Anchor</span>
-                        <span class="processing-layer-tag">Layer 5</span>
+        <!-- Results -->
+        <div class="results-section" id="resultsSection">
+            <div id="alertContainer"></div>
+            <div class="result-card" id="resultCard" style="display:none;">
+                <h3 id="resultTitle">Results</h3>
+                <div id="resultContent"></div>
+                <!-- Tamper Map Canvas -->
+                <div class="tamper-canvas-wrap" id="tamperWrap" style="display:none;">
+                    <h4>Tamper Localization Map</h4>
+                    <canvas id="tamperCanvas"></canvas>
+                    <div class="tamper-legend">
+                        <span><i style="background:#4ade80;"></i>Authentic</span>
+                        <span><i style="background:#ff2d2d;"></i>Tampered</span>
+                        <span><i style="background:#2d2d3a;"></i>Unknown</span>
                     </div>
                 </div>
-            </div>
-        </section>
-
-        <!-- Results Section -->
-        <section class="results" id="results" aria-label="Results">
-            <div id="alertBox"></div>
-
-            <div class="card" id="resultCard" style="display:none;">
-
-                <!-- Verdict -->
-                <div class="verdict-section" id="verdictSection" style="display:none;"></div>
-
-                <!-- Verification Path Flow -->
-                <div class="path-flow" id="pathFlow">
-                    <div class="path-flow-title">Verification Path</div>
-                    <div class="path-nodes" id="pathNodes"></div>
-                </div>
-
-                <!-- Layer Confidence -->
-                <div class="layers-panel" id="layersPanel">
-                    <div class="layers-title">Layer Confidence Breakdown</div>
-                    <div id="layersList"></div>
-                </div>
-
-                <!-- Tamper Map -->
-                <div class="tamper-map-section" id="tamperMapSection">
-                    <div class="tamper-map-title">
-                        <span>🗺️</span> Tamper Localization Map
-                    </div>
-                    <div class="tamper-map-container" id="tamperMapContainer">
-                        <canvas id="tamperCanvas"></canvas>
-                    </div>
-                    <div class="tamper-stat" id="tamperStat"></div>
-                </div>
-
                 <!-- Feature Match -->
-                <div class="feature-match-section" id="featureMatchSection">
-                    <div class="feature-match-title">
-                        <span>🔗</span> Feature Fragment Match
-                    </div>
+                <div class="feature-match-wrap" id="featureMatchWrap" style="display:none;">
+                    <h4>SIFT Fragment Match</h4>
                     <div class="feature-match-info" id="featureMatchInfo"></div>
-                    <div class="feature-match-canvas-wrap" id="featureMatchCanvasWrap" style="display:none;">
+                    <div class="feature-canvas-wrap" id="featureCanvasWrap">
                         <canvas id="featureCanvas"></canvas>
                     </div>
                 </div>
-
-                <!-- Provenance Info -->
-                <div id="provenanceSection" style="display:none;">
-                    <div class="section-title">Provenance Record</div>
-                    <div class="info-grid" id="provenanceGrid"></div>
+                <div class="action-row">
+                    <button class="btn btn-primary" id="downloadBtn" style="display:none;">↓ Download watermarked image</button>
+                    <button class="btn btn-secondary" id="jsonToggle">View JSON</button>
                 </div>
-
-                <!-- Registration Info -->
-                <div id="registrationSection" style="display:none;">
-                    <div class="section-title">Registration Details</div>
-                    <div class="info-grid" id="registrationGrid"></div>
-                </div>
-
-                <!-- Watermarked Image Panel -->
-                <div class="wm-panel" id="wmPanel">
-                    <h4><span>🖼️</span> Watermarked Image (5 layers embedded)</h4>
-                    <img id="wmThumb" alt="Watermarked image preview">
-                    <div>
-                        <button class="btn btn-success" id="downloadBtn" type="button">⬇️ Download Watermarked Image</button>
-                    </div>
-                    <p class="wm-hint">💡 Download this image, then upload it again and click <strong>Verify</strong> to see HydraWatermark V3 in action.</p>
-                </div>
-
-                <div class="divider"></div>
-
-                <!-- JSON Inspector -->
-                <div class="json-toggle-row">
-                    <button class="btn btn-ghost" id="jsonToggle" type="button">{ } View JSON Response</button>
-                </div>
-                <div class="json-block" id="jsonBlock"></div>
+                <div class="json-content mono" id="jsonContent"></div>
             </div>
-        </section>
-    </main>
+        </div>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <p>PROVENA — AI Image Provenance System &bull; HydraWatermark V3</p>
-    </footer>
+    </div>
+</section>
 
-    <!-- ═══════════════════════════════════════════
-         JAVASCRIPT
-         ═══════════════════════════════════════════ -->
-    <script>
-        /* ── State ──────────────────────────────── */
-        let imageData = null;
-        let imageId = null;
-        let responseData = null;
-        let wmB64 = null;
-        let previewImgSrc = null;
+<!-- ═══ FOOTER ══════════════════════════════════════════════════ -->
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div class="footer-wordmark">PROVENA <span class="accent">·</span> research build v4</div>
+        <div class="footer-meta">HydraWatermark V4 · SIFT Homography · Tamper Localization · Ed25519</div>
+    </div>
+</footer>
 
-        const $ = id => document.getElementById(id);
+<script>
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let currentImageData  = null;
+let currentResponse   = null;
+let lastWatermarkedB64= null;
+let previewImgSrc     = null;
 
-        /* ══════════════════════════════════════════
-           UPLOAD HANDLERS
-           ══════════════════════════════════════════ */
-        $('uploadZone').addEventListener('click', () => $('fileInput').click());
-        $('uploadZone').addEventListener('keydown', e => {
-            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('fileInput').click(); }
+// ═══════════════════════════════════════════════
+// DOM REFS
+// ═══════════════════════════════════════════════
+const uploadSection  = document.getElementById('uploadSection');
+const fileInput      = document.getElementById('fileInput');
+const previewSection = document.getElementById('previewSection');
+const previewImage   = document.getElementById('previewImage');
+const loading        = document.getElementById('loading');
+const resultsSection = document.getElementById('resultsSection');
+const resultCard     = document.getElementById('resultCard');
+const alertContainer = document.getElementById('alertContainer');
+const jsonContent    = document.getElementById('jsonContent');
+const registerBtn    = document.getElementById('registerBtn');
+const verifyBtn      = document.getElementById('verifyBtn');
+const clearBtn       = document.getElementById('clearBtn');
+const jsonToggle     = document.getElementById('jsonToggle');
+const downloadBtn    = document.getElementById('downloadBtn');
+const tamperWrap     = document.getElementById('tamperWrap');
+const tamperCanvas   = document.getElementById('tamperCanvas');
+const featureMatchWrap= document.getElementById('featureMatchWrap');
+const featureMatchInfo= document.getElementById('featureMatchInfo');
+const featureCanvasWrap= document.getElementById('featureCanvasWrap');
+const featureCanvas  = document.getElementById('featureCanvas');
+
+// ═══════════════════════════════════════════════
+// UPLOAD / DRAG-DROP
+// ═══════════════════════════════════════════════
+uploadSection.addEventListener('click', () => fileInput.click());
+uploadSection.addEventListener('dragover', e => { e.preventDefault(); uploadSection.classList.add('dragover'); });
+uploadSection.addEventListener('dragleave', () => uploadSection.classList.remove('dragover'));
+uploadSection.addEventListener('drop', e => {
+    e.preventDefault(); uploadSection.classList.remove('dragover');
+    const f = e.dataTransfer.files[0];
+    if (f && f.type.startsWith('image/')) handleFile(f);
+});
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+function handleFile(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+        previewImgSrc = e.target.result;
+        currentImageData = e.target.result.split(',')[1];
+        previewImage.src = e.target.result;
+        uploadSection.style.display = 'none';
+        previewSection.style.display = 'block';
+        resultsSection.style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+}
+
+clearBtn.addEventListener('click', () => {
+    currentImageData = null; currentResponse = null; lastWatermarkedB64 = null; previewImgSrc = null;
+    fileInput.value = '';
+    uploadSection.style.display = 'block';
+    previewSection.style.display = 'none';
+    resultsSection.style.display = 'none';
+    tamperWrap.style.display = 'none';
+    featureMatchWrap.style.display = 'none';
+    featureCanvasWrap.style.display = 'none';
+    resetLayerRings();
+});
+
+// ═══════════════════════════════════════════════
+// LAYER RING ANIMATION
+// ═══════════════════════════════════════════════
+function resetLayerRings() {
+    for (let i = 0; i < 5; i++) {
+        const item = document.getElementById('ll' + i);
+        item.classList.remove('active', 'done');
+        item.querySelector('.layer-status').textContent = 'Awaiting…';
+        const bar = item.querySelector('.ring-progress');
+        bar.style.strokeDashoffset = '88';
+        bar.style.stroke = 'var(--accent)';
+        item.querySelector('.layer-name').style.color = '';
+    }
+}
+
+let layerTimer = null;
+function startLayerAnimation() {
+    resetLayerRings();
+    const labels = ['Extracting neural payload…', 'Reading DCT coefficients…', 'Scanning tiled windows…', 'Checking LSB bits…', 'Running SIFT RANSAC…'];
+    let i = 0;
+    function step() {
+        if (i >= 5) return;
+        const item = document.getElementById('ll' + i);
+        item.classList.add('active');
+        item.querySelector('.layer-status').textContent = labels[i];
+        layerTimer = setTimeout(() => {
+            item.classList.remove('active');
+            item.classList.add('done');
+            item.querySelector('.layer-status').textContent = 'Done';
+            i++;
+            step();
+        }, 600);
+    }
+    step();
+}
+
+function stopLayerAnimation() {
+    clearTimeout(layerTimer);
+}
+
+// ═══════════════════════════════════════════════
+// LOADING TOGGLE
+// ═══════════════════════════════════════════════
+function showLoading(show) {
+    loading.style.display = show ? 'block' : 'none';
+    registerBtn.disabled = show;
+    verifyBtn.disabled = show;
+    if (show) startLayerAnimation();
+    else stopLayerAnimation();
+}
+
+function clearResults() {
+    alertContainer.innerHTML = '';
+    resultCard.style.display = 'none';
+    jsonContent.style.display = 'none';
+    jsonToggle.textContent = 'View JSON';
+    downloadBtn.style.display = 'none';
+    tamperWrap.style.display = 'none';
+    featureMatchWrap.style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════
+// REGISTER
+// ═══════════════════════════════════════════════
+registerBtn.addEventListener('click', async () => {
+    if (!currentImageData) return;
+    showLoading(true); clearResults();
+    try {
+        const res = await fetch('/api/v1/images/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer {{ demo_key }}' },
+            body: JSON.stringify({
+                image: currentImageData,
+                model_id: 'demo-' + new Date().toISOString(),
+                timestamp: new Date().toISOString()
+            })
         });
-        $('uploadZone').addEventListener('dragover', e => {
-            e.preventDefault();
-            $('uploadZone').classList.add('dragover');
+        const data = await res.json();
+        currentResponse = data;
+        if (res.ok) {
+            lastWatermarkedB64 = data.watermarked_image || null;
+            showAlert('Image registered successfully with all five watermark layers.', 'success');
+            displayRegistration(data);
+        } else {
+            const msg = (data.error && data.error.message) ? data.error.message : (data.error || 'Unknown error');
+            showAlert('Registration failed: ' + msg, 'error');
+        }
+    } catch (err) {
+        showAlert('Network error: ' + err.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+});
+
+// ═══════════════════════════════════════════════
+// VERIFY
+// ═══════════════════════════════════════════════
+verifyBtn.addEventListener('click', async () => {
+    if (!currentImageData) return;
+    showLoading(true); clearResults();
+    try {
+        const res = await fetch('/api/v1/images/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer {{ demo_key }}' },
+            body: JSON.stringify({ image: currentImageData })
         });
-        $('uploadZone').addEventListener('dragleave', () => {
-            $('uploadZone').classList.remove('dragover');
+        const data = await res.json();
+        currentResponse = data;
+        showAlert('Verification complete.', 'success');
+        displayVerification(data);
+    } catch (err) {
+        showAlert('Network error: ' + err.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+});
+
+// ═══════════════════════════════════════════════
+// DISPLAY — REGISTRATION
+// ═══════════════════════════════════════════════
+function displayRegistration(data) {
+    resultCard.style.display = 'block';
+    document.getElementById('resultTitle').textContent = 'Registration result';
+    const recId = (data.record_id || data.image_id || '—');
+    const phash = (data.phash || data.perceptual_hash || '—');
+    document.getElementById('resultContent').innerHTML =
+        '<div class="status-badge status-verified">REGISTERED</div>' +
+        '<p style="color:var(--text-muted);font-size:.92rem;margin-bottom:16px;line-height:1.55;">' +
+        'Your image has been signed with Ed25519, indexed with 1,000 SIFT keypoints, and stamped with five invisible watermark layers. ' +
+        '<strong style="color:var(--text);">Download the stamped image below</strong> — share or store that file. Verify it later by uploading it here.' +
+        '</p>' +
+        '<div class="info-grid">' +
+        infoItem('Record ID', recId.substring(0,12) + '…') +
+        infoItem('pHash', (phash+'').substring(0,16) + '…') +
+        infoItem('Registered', fmtDate(data.registered_at)) +
+        '</div>';
+    downloadBtn.style.display = lastWatermarkedB64 ? 'inline-block' : 'none';
+    resultsSection.style.display = 'block';
+}
+
+// ═══════════════════════════════════════════════
+// DISPLAY — VERIFICATION (ENHANCED)
+// ═══════════════════════════════════════════════
+const STATUS_MAP = {
+    'VERIFIED':          ['status-verified',     '✓', 'VERIFIED'],
+    'VERIFIED_MODIFIED': ['status-modified',      '⚠', 'VERIFIED — MODIFIED'],
+    'VERIFIED_FRAGMENT': ['status-fragment',      '🔍', 'FRAGMENT IDENTIFIED'],
+    'TAMPERED':          ['status-tampered',      '✗', 'TAMPERED'],
+    'UNREGISTERED':      ['status-unregistered',  '—', 'UNREGISTERED'],
+    'verified':          ['status-verified',      '✓', 'VERIFIED'],
+    'verified_modified': ['status-modified',      '⚠', 'VERIFIED — MODIFIED'],
+    'verified_fragment': ['status-fragment',      '🔍', 'FRAGMENT IDENTIFIED'],
+    'tampered':          ['status-tampered',      '✗', 'TAMPERED'],
+    'not_found':         ['status-unregistered',  '—', 'NOT FOUND'],
+};
+const LAYER_LABELS = {
+    neural_trustmark: 'Neural TrustMark',
+    dct_block_qim:    'DCT Block QIM',
+    dct_frequency:    'DCT Frequency',
+    tiled_dct:        'Tiled Holographic',
+    spatial_lsb:      'Spatial LSB+ECC',
+    tamper_grid:      'Tamper Grid',
+    feature_anchor:   'Feature Anchor',
+};
+const LAYER_ICONS = {
+    neural_trustmark: '🧠',
+    dct_block_qim:    '📊',
+    dct_frequency:    '📊',
+    tiled_dct:        '🔷',
+    spatial_lsb:      '🔲',
+    tamper_grid:      '🗺',
+    feature_anchor:   '🔗',
+};
+const LAYER_ORDER = ['neural_trustmark','dct_block_qim','dct_frequency','tiled_dct','spatial_lsb','tamper_grid','feature_anchor'];
+const MATCH_TYPE_LABELS = {
+    c2pa: 'C2PA Manifest',
+    hydra_neural: 'Neural Watermark',
+    phash: 'pHash Fallback',
+    wide_phash: 'Wide pHash',
+    tiled_dct: 'Tiled DCT',
+    feature_anchor: 'Feature Anchor',
+    sift: 'SIFT Homography',
+};
+
+function displayVerification(data) {
+    resultCard.style.display = 'block';
+    document.getElementById('resultTitle').textContent = 'Verification result';
+    const status = (data.status || 'UNREGISTERED');
+    const mapped = STATUS_MAP[status] || STATUS_MAP[status.toLowerCase()] || ['status-unregistered', '—', status];
+    const [cls, verdictIcon, label] = mapped;
+    const conf = data.confidence ? Math.round(data.confidence * 100) + '%' : '—';
+
+    // ── Verdict badge
+    let html = '<div class="status-badge ' + cls + '">' + verdictIcon + '  ' + label + '</div>';
+
+    // ── Match type tag
+    if (data.match_type) {
+        html += '<div><span class="match-tag">' + (MATCH_TYPE_LABELS[data.match_type] || data.match_type) + '</span></div>';
+    }
+
+    // ── Fragment identification note
+    const sLower = status.toLowerCase();
+    if (sLower === 'verified_fragment') {
+        const matchCount = data.feature_match ? (data.feature_match.match_count || data.feature_match.inliers || '?') : '?';
+        const matchConf = data.feature_match ? Math.round((data.feature_match.confidence || 0) * 100) : 0;
+        html += '<div class="fragment-note">' +
+            '🔍 <strong>Fragment Identification</strong> — No watermark survived the crop, but the ' +
+            '<strong>SIFT Feature Anchor</strong> matched ' + matchCount + ' geometric keypoints with ' +
+            matchConf + '% confidence. This is a <em>partial screenshot</em> or cropped version of a registered image.' +
+            '</div>';
+    }
+
+    // ── Core info grid
+    const v = data.verification || {};
+    html += '<div class="info-grid">';
+    html += infoItem('Confidence', conf);
+    if (data.model_id) html += infoItem('Model', data.model_id);
+    if (data.registered_at) html += infoItem('Registered', fmtDate(data.registered_at));
+    html += infoItem('Watermark', v.watermark_extracted ? '✓ extracted' : '✗ not found');
+    html += infoItem('C2PA Signature', v.c2pa_valid || v.signature_valid ? '✓ valid' : '✗ absent');
+    html += infoItem('pHash Match', v.perceptual_match ? '✓ match' : '✗ no match');
+    html += '</div>';
+
+    // ── Layer confidence bars (animated)
+    const layers = v.hydra_layers || {};
+    const activeKeys = LAYER_ORDER.filter(k => layers[k]);
+    if (activeKeys.length > 0) {
+        html += '<div class="layers-panel"><div class="layers-panel-title">Layer Confidence Breakdown</div>';
+        activeKeys.forEach(k => {
+            const ly = layers[k];
+            const ok = ly.voted;
+            const confVal = typeof ly.confidence === 'number' ? (ly.confidence * 100).toFixed(1) : '0.0';
+            const barColor = ok ? 'green' : (parseFloat(confVal) > 30 ? 'amber' : 'red');
+            html += '<div class="layer-row">' +
+                '<span class="layer-row-icon">' + (LAYER_ICONS[k] || '●') + '</span>' +
+                '<div class="layer-row-info">' +
+                '<div class="layer-row-name">' + (LAYER_LABELS[k] || k) + '</div>' +
+                '<div class="layer-bar-track"><div class="layer-bar-fill ' + barColor + '" style="width:0%" data-target-w="' + confVal + '%"></div></div>' +
+                '</div>' +
+                '<div class="layer-row-status">' +
+                '<span class="layer-badge ' + (ok ? 'pass' : 'fail') + '">' + (ok ? '✓ Pass' : '✗ Fail') + '</span>' +
+                '<span class="layer-conf-val">' + confVal + '%</span>' +
+                '</div>' +
+                '</div>';
         });
-        $('uploadZone').addEventListener('drop', e => {
-            e.preventDefault();
-            $('uploadZone').classList.remove('dragover');
-            if (e.dataTransfer.files[0]?.type.startsWith('image/')) {
-                handleFile(e.dataTransfer.files[0]);
+        html += '</div>';
+    }
+
+    // ── Provenance section
+    if (data.provenance) {
+        const p = data.provenance;
+        html += '<div class="provenance-section"><div class="prov-title">Provenance Record</div><div class="info-grid">';
+        if (p.model_id) html += infoItem('Model ID', p.model_id);
+        if (p.timestamp) html += infoItem('Timestamp', fmtDate(p.timestamp));
+        if (data.image_id || p.record_id) html += infoItem('Record ID', (data.image_id || p.record_id || '—').substring(0, 20) + '…');
+        if (p.key_id) html += infoItem('Signing Key', (p.key_id || '—').substring(0, 16) + '…');
+        html += '</div></div>';
+    }
+
+    document.getElementById('resultContent').innerHTML = html;
+    resultsSection.style.display = 'block';
+
+    // Animate layer bars after DOM insert
+    requestAnimationFrame(() => {
+        document.querySelectorAll('.layer-bar-fill[data-target-w]').forEach(bar => {
+            bar.style.width = bar.dataset.targetW;
+        });
+    });
+
+    // Tamper map
+    if (data.tamper_map) renderTamperMap(data.tamper_map);
+    // Feature match
+    if (data.feature_match) renderFeatureMatch(data.feature_match);
+}
+
+// ═══════════════════════════════════════════════
+// TAMPER MAP CANVAS
+// ═══════════════════════════════════════════════
+function renderTamperMap(tm) {
+    if (!tm || !tm.cells) return;
+    const rows = tm.grid_rows || 1;
+    const cols = tm.grid_cols || 1;
+    const CELL = Math.max(8, Math.min(24, Math.floor(400 / Math.max(cols, rows))));
+    tamperCanvas.width  = cols * CELL;
+    tamperCanvas.height = rows * CELL;
+    tamperCanvas.style.width  = Math.min(cols * CELL, 540) + 'px';
+    tamperCanvas.style.height = Math.round(rows * CELL * (Math.min(cols * CELL, 540) / (cols * CELL))) + 'px';
+    const ctx = tamperCanvas.getContext('2d');
+    let authCount = 0, evalCount = 0;
+    tm.cells.forEach(cell => {
+        const tampered = cell.status === 'tampered';
+        const unknown  = cell.status === 'unknown';
+        if (!unknown) { evalCount++; if (!tampered) authCount++; }
+        ctx.fillStyle = tampered ? 'rgba(255,45,45,0.65)'
+                      : unknown  ? 'rgba(148,163,184,0.2)'
+                      : 'rgba(74,222,128,0.45)';
+        ctx.fillRect(cell.col * CELL, cell.row * CELL, CELL - 1, CELL - 1);
+    });
+    const authPct = tm.authentic_percentage != null
+        ? tm.authentic_percentage.toFixed(1)
+        : (evalCount > 0 ? ((authCount / evalCount) * 100).toFixed(1) : '0.0');
+    const h4 = tamperWrap.querySelector('h4');
+    h4.innerHTML = 'Tamper Localization Map · <span style="color:var(--success)">' + authPct + '% Authentic</span> · <span style="color:var(--accent)">' + (100 - parseFloat(authPct)).toFixed(1) + '% Tampered</span>';
+    tamperWrap.style.display = 'block';
+}
+
+// ═══════════════════════════════════════════════
+// FEATURE MATCH (RICH CANVAS)
+// ═══════════════════════════════════════════════
+function renderFeatureMatch(fm) {
+    if (!fm) return;
+    if (!fm.matched) {
+        featureMatchInfo.innerHTML = 'No geometric match found.';
+        featureMatchWrap.style.display = 'block';
+        return;
+    }
+
+    // Extract coordinates
+    const x1 = fm.x1 ?? (fm.matched_region ? fm.matched_region[0] : (fm.region ? fm.region[0] : 0));
+    const y1 = fm.y1 ?? (fm.matched_region ? fm.matched_region[1] : (fm.region ? fm.region[1] : 0));
+    const x2 = fm.x2 ?? (fm.matched_region ? fm.matched_region[2] : (fm.region ? fm.region[2] : 0));
+    const y2 = fm.y2 ?? (fm.matched_region ? fm.matched_region[3] : (fm.region ? fm.region[3] : 0));
+    const origW = fm.orig_width || 512;
+    const origH = fm.orig_height || 512;
+    const confPct = fm.confidence != null ? Math.round(fm.confidence * 100) : 0;
+    const inliers = fm.inliers || fm.match_count || '—';
+
+    // Rich HTML message
+    featureMatchInfo.innerHTML =
+        'Fragment matched to region <code style="font-family:JetBrains Mono,monospace;background:var(--bg-card);padding:2px 6px;color:var(--accent);font-size:.82rem;">(' + x1 + ', ' + y1 + ')</code> – ' +
+        '<code style="font-family:JetBrains Mono,monospace;background:var(--bg-card);padding:2px 6px;color:var(--accent);font-size:.82rem;">(' + x2 + ', ' + y2 + ')</code>' +
+        ' of registered <strong style="color:var(--text)">' + origW + '×' + origH + '</strong> image' +
+        ' · <strong style="color:var(--success)">' + confPct + '% confidence</strong>' +
+        ' · ' + inliers + ' inliers';
+    featureMatchWrap.style.display = 'block';
+
+    // Draw fragment positioned inside original image canvas
+    if (previewImgSrc && x2 > x1 && y2 > y1) {
+        const canvas = featureCanvas;
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.onload = () => {
+            const scale = Math.min(500 / origW, 400 / origH, 1);
+            canvas.width = origW * scale;
+            canvas.height = origH * scale;
+
+            // Dark background = original image canvas
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Grid lines
+            ctx.strokeStyle = 'rgba(255,45,45,0.04)';
+            ctx.lineWidth = 1;
+            const gridSize = 32 * scale;
+            for (let x = 0; x < canvas.width; x += gridSize) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
             }
-        });
-        $('fileInput').addEventListener('change', e => {
-            if (e.target.files[0]) handleFile(e.target.files[0]);
-        });
+            for (let y = 0; y < canvas.height; y += gridSize) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+            }
 
-        function handleFile(file) {
-            const reader = new FileReader();
-            reader.onload = e => {
-                previewImgSrc = e.target.result;
-                imageData = e.target.result.split(',')[1];
-                $('previewImg').src = e.target.result;
-                $('uploadZone').style.display = 'none';
-                $('previewArea').style.display = 'block';
-                $('results').style.display = 'none';
-                $('processing').style.display = 'none';
-            };
-            reader.readAsDataURL(file);
+            // Draw the fragment image at the matched region
+            const rx1 = x1 * scale, ry1 = y1 * scale;
+            const rw = (x2 - x1) * scale, rh = (y2 - y1) * scale;
+            ctx.drawImage(img, rx1, ry1, rw, rh);
+
+            // Dashed bounding box
+            ctx.strokeStyle = '#ff2d2d';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 4]);
+            ctx.strokeRect(rx1, ry1, rw, rh);
+
+            // Label tag
+            ctx.setLineDash([]);
+            ctx.fillStyle = 'rgba(255,45,45,0.92)';
+            ctx.fillRect(rx1, ry1 - 18, 120, 18);
+            ctx.fillStyle = '#fff';
+            ctx.font = '10px Inter, JetBrains Mono, sans-serif';
+            ctx.fillText('Matched Fragment', rx1 + 6, ry1 - 5);
+
+            // Dimensions label at bottom
+            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            ctx.font = '9px JetBrains Mono, monospace';
+            ctx.fillText(origW + '×' + origH + ' original', 6, canvas.height - 6);
+
+            featureCanvasWrap.style.display = 'inline-block';
+        };
+        img.src = previewImgSrc;
+    }
+}
+
+// ═══════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════
+function infoItem(label, value) {
+    return '<div class="info-item"><label>' + label + '</label><value>' + (value||'—') + '</value></div>';
+}
+function fmtDate(iso) {
+    if (!iso) return '—';
+    try { return new Date(iso).toLocaleString(undefined, {year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }
+    catch (_) { return iso; }
+}
+function showAlert(msg, type) {
+    alertContainer.innerHTML = '<div class="alert alert-' + (type === 'error' ? 'error' : 'success') + '">' + msg + '</div>';
+    resultsSection.style.display = 'block';
+}
+
+// JSON toggle
+jsonToggle.addEventListener('click', () => {
+    if (jsonContent.style.display === 'block') {
+        jsonContent.style.display = 'none';
+        jsonToggle.textContent = 'View JSON';
+    } else {
+        jsonContent.textContent = JSON.stringify(currentResponse, null, 2);
+        jsonContent.style.display = 'block';
+        jsonToggle.textContent = 'Hide JSON';
+    }
+});
+
+// Download watermarked image
+downloadBtn.addEventListener('click', () => {
+    if (!lastWatermarkedB64) return;
+    const bytes = atob(lastWatermarkedB64);
+    const arr = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+    const blob = new Blob([arr], {type: 'image/png'});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'provena-watermarked.png';
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+
+// ═══════════════════════════════════════════════
+// SCROLL REVEAL
+// ═══════════════════════════════════════════════
+const revealObs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); revealObs.unobserve(e.target); } });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+// ═══════════════════════════════════════════════
+// ANIME.JS — hero entrance + stat counters + particles
+// ═══════════════════════════════════════════════
+(function () {
+    if (typeof anime === 'undefined') {
+        document.querySelectorAll('.anim-init, .hero-title .word').forEach(el => {
+            el.style.opacity = 1; el.style.transform = 'none';
+        });
+        return;
+    }
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (reducedMotion) {
+        document.querySelectorAll('.anim-init, .hero-title .word').forEach(el => {
+            el.style.opacity = 1; el.style.transform = 'none';
+        });
+    } else {
+        const tl = anime.timeline({ easing: 'easeOutExpo', duration: 800 });
+        tl.add({ targets: '#heroEyebrow', opacity: [0,1], translateY: [-10,0], duration: 600 })
+          .add({ targets: '.hero-title .word', opacity: [0,1], translateY: [28,0], duration: 900, delay: anime.stagger(75) }, '-=300')
+          .add({ targets: '#heroSub', opacity: [0,1], translateY: [20,0], duration: 700 }, '-=500')
+          .add({ targets: '.cta-row .anim-init', opacity: [0,1], scale: [0.92,1], duration: 600, delay: anime.stagger(90) }, '-=400');
+    }
+
+    // Stat counters
+    const statObs = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            const el = entry.target;
+            const target = el.dataset.target;
+            if (!target) return;
+            if (reducedMotion) { el.textContent = target; return; }
+            const counter = { v: 0 };
+            anime({ targets: counter, v: parseFloat(target), duration: 1400, easing: 'easeOutCubic',
+                    update: () => { el.textContent = Math.round(counter.v); } });
+            statObs.unobserve(el);
+        });
+    }, { threshold: 0.4 });
+    document.querySelectorAll('.stat-num[data-target]').forEach(el => statObs.observe(el));
+
+    // Particle constellation
+    (function initParticles() {
+        if (reducedMotion) return;
+        const canvas = document.getElementById('heroParticles');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const DPR = Math.min(window.devicePixelRatio || 1, 1.5);
+        const FRAME_MS = 1000 / 30;
+        const MAX_LINK = 110;
+        let particles = [], cw = 0, ch = 0;
+
+        function resize() {
+            const r = canvas.parentElement.getBoundingClientRect();
+            cw = r.width; ch = r.height;
+            canvas.width = cw * DPR; canvas.height = ch * DPR;
+            canvas.style.width = cw + 'px'; canvas.style.height = ch + 'px';
+            const count = Math.min(45, Math.max(18, Math.floor((cw * ch) / 22000)));
+            particles = Array.from({ length: count }, () => ({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                vx: (Math.random() - .5) * .35 * DPR,
+                vy: (Math.random() - .5) * .35 * DPR,
+                r:  (Math.random() * 1.4 + .6) * DPR,
+            }));
         }
 
-        /* ══════════════════════════════════════════
-           CLEAR
-           ══════════════════════════════════════════ */
-        $('clearBtn').addEventListener('click', () => {
-            imageData = imageId = responseData = wmB64 = previewImgSrc = null;
-            $('fileInput').value = '';
-            $('uploadZone').style.display = '';
-            $('previewArea').style.display = 'none';
-            $('results').style.display = 'none';
-            $('processing').style.display = 'none';
-            clearResults();
-        });
-
-        /* ══════════════════════════════════════════
-           REGISTER
-           ══════════════════════════════════════════ */
-        $('registerBtn').addEventListener('click', async () => {
-            if (!imageData) return;
-            setProcessing(true, 'Embedding watermark layers...');
-            clearResults();
-            try {
-                const res = await fetch('/api/v1/images/register', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer {{ demo_key }}'
-                    },
-                    body: JSON.stringify({
-                        image: imageData,
-                        model_id: 'demo-model-v1',
-                        timestamp: new Date().toISOString()
-                    })
-                });
-                const data = await res.json();
-                responseData = data;
-                if (res.ok) {
-                    imageId = data.image_id;
-                    wmB64 = data.watermarked_image || null;
-                    showAlert('ok', '✓ Image registered with HydraWatermark V3 (Neural + DCT + Tiled + Spatial + Feature Anchor)');
-                    renderRegister(data);
-                } else {
-                    showAlert('err', '✗ Registration failed: ' + (data.error || data.message || 'Unknown error'));
-                }
-            } catch (e) {
-                showAlert('err', '✗ Network error: ' + e.message);
+        let lastTick = 0;
+        function tick(t) {
+            if (document.hidden) { requestAnimationFrame(tick); return; }
+            if (t - lastTick < FRAME_MS) { requestAnimationFrame(tick); return; }
+            lastTick = t;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (const p of particles) {
+                p.x += p.vx; p.y += p.vy;
+                if (p.x < 0 || p.x > canvas.width)  p.vx *= -1;
+                if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
             }
-            setProcessing(false);
-        });
-
-        /* ══════════════════════════════════════════
-           VERIFY
-           ══════════════════════════════════════════ */
-        $('verifyBtn').addEventListener('click', async () => {
-            if (!imageData) return;
-            setProcessing(true, 'Extracting watermarks from 5 layers...');
-            clearResults();
-            try {
-                const res = await fetch('/api/v1/images/verify', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer {{ demo_key }}'
-                    },
-                    body: JSON.stringify({ image: imageData })
-                });
-                const data = await res.json();
-                responseData = data;
-                imageId = data.image_id || null;
-                if (res.ok) {
-                    showAlert('ok', '✓ Verification complete — all layers analyzed');
-                } else if (res.status === 404) {
-                    showAlert('err', '✗ Image not found in provenance registry');
-                } else {
-                    showAlert('err', '✗ Verification error: ' + (data.error || 'Unknown'));
-                }
-                renderVerify(data);
-            } catch (e) {
-                showAlert('err', '✗ Network error: ' + e.message);
-            }
-            setProcessing(false);
-        });
-
-        /* ══════════════════════════════════════════
-           DOWNLOAD
-           ══════════════════════════════════════════ */
-        $('downloadBtn').addEventListener('click', () => {
-            console.log('[PROVENA] Download clicked, wmB64 length:', wmB64 ? wmB64.length : 'null');
-            if (!wmB64) {
-                alert('No watermarked image available. Please register an image first.');
-                return;
-            }
-            try {
-                // Convert base64 to binary blob (works for large files in all browsers)
-                const byteCharacters = atob(wmB64);
-                const byteNumbers = new Uint8Array(byteCharacters.length);
-                for (let i = 0; i < byteCharacters.length; i++) {
-                    byteNumbers[i] = byteCharacters.charCodeAt(i);
-                }
-                const blob = new Blob([byteNumbers], { type: 'image/png' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = (imageId || 'provena') + '_watermarked.png';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                setTimeout(() => URL.revokeObjectURL(url), 5000);
-                console.log('[PROVENA] Download triggered successfully');
-            } catch (err) {
-                console.error('[PROVENA] Download error:', err);
-                alert('Download failed: ' + err.message);
-            }
-        });
-
-        /* ══════════════════════════════════════════
-           JSON TOGGLE
-           ══════════════════════════════════════════ */
-        $('jsonToggle').addEventListener('click', () => {
-            const block = $('jsonBlock');
-            if (block.style.display === 'none' || !block.style.display) {
-                block.style.display = 'block';
-                block.innerHTML = syntaxHighlight(JSON.stringify(responseData, null, 2));
-                $('jsonToggle').textContent = '{ } Hide JSON Response';
-            } else {
-                block.style.display = 'none';
-                $('jsonToggle').textContent = '{ } View JSON Response';
-            }
-        });
-
-        /* ══════════════════════════════════════════
-           HELPERS
-           ══════════════════════════════════════════ */
-        function setProcessing(show, text) {
-            $('processing').style.display = show ? 'block' : 'none';
-            if (text) $('processingTitle').textContent = text;
-            $('registerBtn').disabled = show;
-            $('verifyBtn').disabled = show;
-
-            // Reset ring animations when showing
-            if (show) {
-                const rings = document.querySelectorAll('.processing-ring-fg');
-                rings.forEach(r => {
-                    r.style.animation = 'none';
-                    r.offsetHeight; // reflow
-                    r.style.animation = '';
-                });
-            }
-        }
-
-        function clearResults() {
-            $('alertBox').innerHTML = '';
-            $('resultCard').style.display = 'none';
-            $('verdictSection').style.display = 'none';
-            $('pathFlow').style.display = 'none';
-            $('layersPanel').style.display = 'none';
-            $('tamperMapSection').style.display = 'none';
-            $('featureMatchSection').style.display = 'none';
-            $('provenanceSection').style.display = 'none';
-            $('registrationSection').style.display = 'none';
-            $('wmPanel').style.display = 'none';
-            $('jsonBlock').style.display = 'none';
-            $('jsonToggle').textContent = '{ } View JSON Response';
-        }
-
-        function showAlert(type, msg) {
-            const icon = type === 'ok' ? '' : '';
-            $('alertBox').innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
-            $('results').style.display = 'block';
-        }
-
-        /* ── JSON Syntax Highlighting ──────────── */
-        function syntaxHighlight(json) {
-            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            return json.replace(
-                /("(\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
-                function (match) {
-                    let cls = 'json-number';
-                    if (/^"/.test(match)) {
-                        cls = /:$/.test(match) ? 'json-key' : 'json-string';
-                    } else if (/true|false/.test(match)) {
-                        cls = 'json-boolean';
-                    } else if (/null/.test(match)) {
-                        cls = 'json-null';
+            const maxD = MAX_LINK * DPR, maxD2 = maxD * maxD;
+            ctx.lineWidth = 0.5 * DPR;
+            for (let i = 0; i < particles.length; i++) {
+                const a = particles[i];
+                for (let j = i + 1; j < particles.length; j++) {
+                    const b = particles[j];
+                    const dx = a.x - b.x, dy = a.y - b.y;
+                    const d2 = dx * dx + dy * dy;
+                    if (d2 < maxD2) {
+                        const alpha = (1 - Math.sqrt(d2) / maxD) * 0.22;
+                        ctx.strokeStyle = 'rgba(255,45,45,' + alpha + ')';
+                        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
                     }
-                    return '<span class="' + cls + '">' + match + '</span>';
-                }
-            );
-        }
-
-        /* ══════════════════════════════════════════
-           RENDER REGISTRATION
-           ══════════════════════════════════════════ */
-        function renderRegister(d) {
-            $('resultCard').style.display = 'block';
-            $('registrationSection').style.display = 'block';
-
-            $('registrationGrid').innerHTML = `
-                <div class="info-cell">
-                    <div class="label">Record ID</div>
-                    <div class="value">${d.image_id || '—'}</div>
-                </div>
-                <div class="info-cell">
-                    <div class="label">pHash</div>
-                    <div class="value">${(d.perceptual_hash || '—').substring(0, 16)}…</div>
-                </div>
-                <div class="info-cell">
-                    <div class="label">Watermark Layers</div>
-                    <div class="value">5 (Neural + DCT + Tiled + Spatial + Anchor)</div>
-                </div>
-                <div class="info-cell">
-                    <div class="label">Registered At</div>
-                    <div class="value">${new Date(d.registered_at || Date.now()).toLocaleString()}</div>
-                </div>
-            `;
-
-            if (wmB64) {
-                $('wmThumb').src = 'data:image/png;base64,' + wmB64;
-                $('wmPanel').style.display = 'block';
-            }
-        }
-
-        /* ══════════════════════════════════════════
-           RENDER VERIFICATION
-           ══════════════════════════════════════════ */
-        function renderVerify(d) {
-            $('resultCard').style.display = 'block';
-
-            // ── Verdict Badge ──────────────────────
-            const s = (d.status || 'not_found').toLowerCase();
-            let verdictClass, verdictIcon, verdictText;
-            if (s === 'verified') {
-                verdictClass = 'verdict-verified';
-                verdictIcon = '\u2713';
-                verdictText = 'VERIFIED';
-            } else if (s === 'verified_modified') {
-                verdictClass = 'verdict-modified';
-                verdictIcon = '\u26a0';
-                verdictText = 'MODIFIED';
-            } else if (s === 'verified_fragment') {
-                verdictClass = 'verdict-fragment';
-                verdictIcon = '\uD83D\uDD0D';
-                verdictText = 'FRAGMENT IDENTIFIED';
-            } else if (s === 'tampered') {
-                verdictClass = 'verdict-tampered';
-                verdictIcon = '\u2715';
-                verdictText = 'TAMPERED';
-            } else {
-                verdictClass = 'verdict-unregistered';
-                verdictIcon = '\u2014';
-                verdictText = 'UNREGISTERED';
-            }
-
-            let matchTagHtml = '';
-            if (d.match_type) {
-                const labels = {
-                    c2pa: 'C2PA Manifest',
-                    hydra_neural: 'Neural Watermark',
-                    phash: 'pHash Fallback',
-                    wide_phash: 'Wide pHash',
-                    tiled_dct: 'Tiled DCT',
-                    feature_anchor: 'Feature Anchor'
-                };
-                matchTagHtml = `<div><span class="match-tag">${labels[d.match_type] || d.match_type}</span></div>`;
-            }
-
-            $('verdictSection').style.display = 'block';
-            let fragmentNote = '';
-            if (s === 'verified_fragment') {
-                fragmentNote = `<div style="margin-top:12px;padding:10px 16px;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);border-radius:10px;font-size:0.82rem;color:#a5b4fc;">
-                    \uD83D\uDD0D <strong>Fragment Identification</strong> — No watermark survived, but the <strong>Feature Anchor Network</strong> matched ${d.feature_match?.match_count || '?'} visual patches with ${((d.feature_match?.confidence||0)*100).toFixed(0)}% confidence. This is a <em>partial screenshot</em> or cropped version of a registered image.
-                </div>`;
-            }
-            $('verdictSection').innerHTML = `
-                <div class="verdict-badge ${verdictClass}">
-                    <span class="verdict-icon">${verdictIcon}</span>
-                    ${verdictText}
-                </div>
-                ${matchTagHtml}
-                ${fragmentNote}
-            `;
-
-            // ── Verification Path Flow ──────────────
-            renderPathFlow(d);
-
-            // ── Layer Confidence ────────────────────
-            if (d.verification?.hydra_layers && Object.keys(d.verification.hydra_layers).length > 0) {
-                renderLayers(d.verification.hydra_layers);
-            }
-
-            // ── Tamper Map ──────────────────────────
-            if (d.tamper_map) {
-                renderTamperMap(d.tamper_map);
-            }
-
-            // ── Feature Match ───────────────────────
-            if (d.feature_match) {
-                renderFeatureMatch(d.feature_match);
-            }
-
-            // ── Provenance Info ─────────────────────
-            if (d.provenance) {
-                $('provenanceSection').style.display = 'block';
-                const p = d.provenance;
-                $('provenanceGrid').innerHTML = `
-                    <div class="info-cell">
-                        <div class="label">Model ID</div>
-                        <div class="value">${p.model_id || '—'}</div>
-                    </div>
-                    <div class="info-cell">
-                        <div class="label">Timestamp</div>
-                        <div class="value">${p.timestamp ? new Date(p.timestamp).toLocaleString() : '—'}</div>
-                    </div>
-                    <div class="info-cell">
-                        <div class="label">Record ID</div>
-                        <div class="value">${d.image_id || p.record_id || '—'}</div>
-                    </div>
-                    <div class="info-cell">
-                        <div class="label">Key ID</div>
-                        <div class="value">${(p.key_id || '—').substring(0, 20)}…</div>
-                    </div>
-                `;
-            }
-
-            // ── Verification details grid ────────────
-            if (d.verification) {
-                const v = d.verification;
-                if (!d.provenance) {
-                    $('provenanceSection').style.display = 'block';
-                    $('provenanceGrid').innerHTML = `
-                        <div class="info-cell">
-                            <div class="label">Watermark Extracted</div>
-                            <div class="value">${v.watermark_extracted ? '✓ Yes' : '✗ No'}</div>
-                        </div>
-                        <div class="info-cell">
-                            <div class="label">C2PA Signature</div>
-                            <div class="value">${v.signature_valid ? '✓ Valid' : '✗ Not Found'}</div>
-                        </div>
-                        <div class="info-cell">
-                            <div class="label">Perceptual Match</div>
-                            <div class="value">${v.perceptual_match ? '✓ Yes' : '✗ No'}</div>
-                        </div>
-                    `;
                 }
             }
-        }
-
-        /* ══════════════════════════════════════════
-           RENDER PATH FLOW (5 nodes connected)
-           ══════════════════════════════════════════ */
-        function renderPathFlow(d) {
-            const pathNames = ['C2PA', 'Neural', 'Tiled', 'pHash', 'Anchor'];
-            const pathKeys = ['c2pa', 'hydra_neural', 'tiled_dct', 'phash', 'feature_anchor'];
-
-            const v = d.verification || {};
-            const matchType = d.match_type || '';
-
-            let nodesHtml = '';
-            pathKeys.forEach((key, i) => {
-                let stateClass = 'dim';
-                let layerData = null;
-
-                // Check hydra_layers for the state
-                if (v.hydra_layers && v.hydra_layers[key]) {
-                    layerData = v.hydra_layers[key];
-                }
-
-                // Determine state
-                if (key === matchType) {
-                    stateClass = 'winner';
-                } else if (layerData && layerData.voted) {
-                    stateClass = 'active';
-                } else if (key === 'c2pa' && v.signature_valid) {
-                    stateClass = 'active';
-                } else if (key === 'phash' && v.perceptual_match) {
-                    stateClass = 'active';
-                }
-
-                const connectorClass = (stateClass === 'active' || stateClass === 'winner') ? 'active' : '';
-
-                if (i > 0) {
-                    nodesHtml += `<span class="path-connector ${connectorClass}"></span>`;
-                }
-                nodesHtml += `
-                    <div class="path-node">
-                        <div class="path-node-circle ${stateClass}">
-                            ${stateClass === 'winner' ? '★' : (stateClass === 'active' ? '✓' : '·')}
-                            <span class="path-node-label">${pathNames[i]}</span>
-                        </div>
-                    </div>
-                `;
-            });
-
-            $('pathNodes').innerHTML = nodesHtml;
-            $('pathFlow').style.display = 'block';
-        }
-
-        /* ══════════════════════════════════════════
-           RENDER LAYER CONFIDENCE
-           ══════════════════════════════════════════ */
-        function renderLayers(layers) {
-            const icons = {
-                neural_trustmark: '🧠',
-                dct_frequency: '📊',
-                tiled_dct: '🔷',
-                spatial_lsb: '🔲',
-                feature_anchor: '🔗'
-            };
-            const names = {
-                neural_trustmark: 'Neural (TrustMark)',
-                dct_frequency: 'DCT (Frequency)',
-                tiled_dct: 'Tiled DCT (Holographic)',
-                spatial_lsb: 'Spatial (LSB+ECC)',
-                feature_anchor: 'Feature Anchor'
-            };
-
-            let html = '';
-            for (const [key, info] of Object.entries(layers)) {
-                const ok = info.voted;
-                const conf = (info.confidence * 100).toFixed(1);
-                const barColor = ok ? 'green' : (parseFloat(conf) > 30 ? 'amber' : 'red');
-
-                html += `
-                    <div class="layer-row">
-                        <span class="layer-icon">${icons[key] || '◉'}</span>
-                        <div class="layer-info">
-                            <div class="layer-name">${names[key] || key}</div>
-                            <div class="layer-bar-track">
-                                <div class="layer-bar-fill ${barColor}" style="width: ${conf}%;"></div>
-                            </div>
-                        </div>
-                        <div class="layer-status">
-                            <span class="layer-status-badge ${ok ? 'pass' : 'fail'}">${ok ? '✓ Pass' : '✗ Fail'}</span>
-                            <span class="layer-conf-value">${conf}%</span>
-                        </div>
-                    </div>
-                `;
+            ctx.fillStyle = 'rgba(255,45,45,0.45)';
+            for (const p of particles) {
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
             }
-
-            $('layersList').innerHTML = html;
-            $('layersPanel').style.display = 'block';
+            requestAnimationFrame(tick);
         }
 
-        /* ══════════════════════════════════════════
-           RENDER TAMPER MAP
-           ══════════════════════════════════════════ */
-        function renderTamperMap(tamperData) {
-            const canvas = $('tamperCanvas');
-            const ctx = canvas.getContext('2d');
-
-            // tamperData expected: { grid: [[0,1,...], ...], width: N, height: M }
-            // or an array of arrays where 0=authentic, 1=tampered
-            let grid, gridW, gridH;
-
-            if (tamperData.grid_rows && tamperData.grid_cols && Array.isArray(tamperData.cells)) {
-                gridH = tamperData.grid_rows;
-                gridW = tamperData.grid_cols;
-                grid = Array.from({ length: gridH }, () => Array(gridW).fill(0));
-                for (const cell of tamperData.cells) {
-                    if (cell.row < gridH && cell.col < gridW) {
-                        grid[cell.row][cell.col] = (cell.status === 'tampered') ? 1 : (cell.status === 'unknown' ? 2 : 0);
-                    }
-                }
-            } else if (tamperData.grid) {
-                grid = tamperData.grid;
-                gridH = grid.length;
-                gridW = grid[0]?.length || 0;
-            } else if (Array.isArray(tamperData)) {
-                grid = tamperData;
-                gridH = grid.length;
-                gridW = grid[0]?.length || 0;
-            } else {
-                return; // unknown format, skip
-            }
-
-            if (gridW === 0 || gridH === 0) return;
-
-            const cellSize = Math.max(8, Math.min(24, Math.floor(400 / Math.max(gridW, gridH))));
-            canvas.width = gridW * cellSize;
-            canvas.height = gridH * cellSize;
-
-            let authCount = 0;
-            let evaluatedCount = 0;
-
-            for (let y = 0; y < gridH; y++) {
-                for (let x = 0; x < gridW; x++) {
-                    const val = grid[y][x];
-                    const isTampered = val === 1 || val === true;
-                    const isUnknown = val === 2;
-
-                    if (!isUnknown) {
-                        evaluatedCount++;
-                        if (!isTampered) {
-                            authCount++;
-                        }
-                    }
-
-                    ctx.fillStyle = isTampered
-                        ? 'rgba(239, 68, 68, 0.65)'
-                        : (isUnknown ? 'rgba(148, 163, 184, 0.2)' : 'rgba(16, 185, 129, 0.45)');
-                    ctx.fillRect(x * cellSize, y * cellSize, cellSize - 1, cellSize - 1);
-                }
-            }
-
-            const authPct = (tamperData.authentic_percentage !== undefined)
-                ? tamperData.authentic_percentage.toFixed(1)
-                : (evaluatedCount > 0 ? ((authCount / evaluatedCount) * 100).toFixed(1) : '0.0');
-            $('tamperStat').innerHTML = `<span class="authentic">${authPct}% Authentic</span> · <span class="tampered">${(100 - authPct).toFixed(1)}% Tampered</span>`;
-            $('tamperMapSection').style.display = 'block';
-        }
-
-        /* ══════════════════════════════════════════
-           RENDER FEATURE MATCH
-           ══════════════════════════════════════════ */
-        function renderFeatureMatch(featureData) {
-            // featureData expected: { x1, y1, x2, y2, matched_region?, message?, orig_width?, orig_height? }
-            const x1 = featureData.x1 ?? featureData.matched_region?.[0] ?? featureData.region?.[0] ?? 0;
-            const y1 = featureData.y1 ?? featureData.matched_region?.[1] ?? featureData.region?.[1] ?? 0;
-            const x2 = featureData.x2 ?? featureData.matched_region?.[2] ?? featureData.region?.[2] ?? 0;
-            const y2 = featureData.y2 ?? featureData.matched_region?.[3] ?? featureData.region?.[3] ?? 0;
-            
-            const origW = featureData.orig_width || 512;
-            const origH = featureData.orig_height || 512;
-
-            const msg = featureData.message ||
-                `Fragment matched to region <code>(${x1}, ${y1})</code> – <code>(${x2}, ${y2})</code> of registered ${origW}x${origH} image`;
-
-            $('featureMatchInfo').innerHTML = msg;
-            $('featureMatchSection').style.display = 'block';
-
-            // Draw fragment positioned inside original registered canvas
-            if (previewImgSrc && x2 > x1 && y2 > y1) {
-                const canvas = $('featureCanvas');
-                const ctx = canvas.getContext('2d');
-                const img = new Image();
-                img.onload = () => {
-                    // Set canvas size to match original registered image dimensions (scaled down to fit UI)
-                    const scale = Math.min(500 / origW, 400 / origH, 1);
-                    canvas.width = origW * scale;
-                    canvas.height = origH * scale;
-
-                    // Draw dark/grey background representing original canvas
-                    ctx.fillStyle = '#0f0f23';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    
-                    // Draw grid lines to suggest unregistered regions
-                    ctx.strokeStyle = 'rgba(99, 102, 241, 0.05)';
-                    ctx.lineWidth = 1;
-                    const gridSize = 32 * scale;
-                    for (let x = 0; x < canvas.width; x += gridSize) {
-                        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
-                    }
-                    for (let y = 0; y < canvas.height; y += gridSize) {
-                        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
-                    }
-
-                    // Draw query fragment image positioned at rx1, ry1 with matching width/height
-                    const rx1 = x1 * scale;
-                    const ry1 = y1 * scale;
-                    const rw = (x2 - x1) * scale;
-                    const rh = (y2 - y1) * scale;
-                    
-                    ctx.drawImage(img, rx1, ry1, rw, rh);
-
-                    // Draw dashed bounding box highlighting the match
-                    ctx.strokeStyle = '#6366f1';
-                    ctx.lineWidth = 2;
-                    ctx.setLineDash([6, 4]);
-                    ctx.strokeRect(rx1, ry1, rw, rh);
-
-                    // Label tag
-                    ctx.setLineDash([]);
-                    ctx.fillStyle = 'rgba(99, 102, 241, 0.95)';
-                    ctx.fillRect(rx1, ry1 - 18, 95, 18);
-                    ctx.fillStyle = '#fff';
-                    ctx.font = '10px Inter, sans-serif';
-                    ctx.fillText('Matched Fragment', rx1 + 6, ry1 - 5);
-
-                    $('featureMatchCanvasWrap').style.display = 'inline-block';
-                };
-                img.src = previewImgSrc;
-            }
-        }
-    </script>
+        window.addEventListener('resize', () => {
+            clearTimeout(window.__pResize);
+            window.__pResize = setTimeout(resize, 120);
+        });
+        resize();
+        anime({ targets: canvas, opacity: [0,1], duration: 1200, delay: 200, easing: 'easeOutQuad',
+                begin: () => canvas.style.opacity = 0,
+                update: a => canvas.style.opacity = a.progress / 100 });
+        requestAnimationFrame(tick);
+    })();
+})();
+</script>
 </body>
 </html>
