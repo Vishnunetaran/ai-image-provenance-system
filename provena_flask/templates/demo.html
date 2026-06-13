@@ -213,6 +213,142 @@
         .upload-zone h3{font-size:1.25rem;font-weight:700;margin-bottom:6px;}
         .upload-zone p{color:var(--text-muted);font-size:.9rem;}
         #fileInput{display:none;}
+
+        /* ── CAMERA ──────────────────────────── */
+        .upload-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            width: 100%;
+        }
+        .upload-divider::before, .upload-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+            margin: 0 16px;
+        }
+        .btn-camera {
+            background: var(--bg-card);
+            color: var(--text);
+            border: 1px solid var(--border-strong);
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0 auto;
+            border-radius: 4px;
+        }
+        .btn-camera:hover {
+            border-color: var(--accent);
+            background: var(--accent-dim);
+            color: var(--text);
+        }
+        
+        .camera-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 10, 0.9);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .camera-inner {
+            background: var(--bg-card);
+            border: 1px solid var(--border-strong);
+            width: 90%;
+            max-width: 500px;
+            border-radius: 4px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .camera-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 18px;
+            border-bottom: 1px solid var(--border);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+        }
+        .camera-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: color 0.15s;
+        }
+        .camera-close:hover {
+            color: var(--accent);
+        }
+        #cameraVideo {
+            width: 100%;
+            aspect-ratio: 4/3;
+            object-fit: cover;
+            background: #000;
+        }
+        .camera-controls {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 20px;
+            background: var(--bg-elev);
+            border-top: 1px solid var(--border);
+        }
+        .camera-snap {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: 4px solid var(--text);
+            cursor: pointer;
+            box-shadow: 0 0 12px var(--accent-glow);
+            transition: transform 0.1s, background-color 0.15s;
+        }
+        .camera-snap:active {
+            transform: scale(0.9);
+        }
+        .camera-snap:hover {
+            background: var(--accent-hover);
+        }
+        .camera-switch {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.4rem;
+            cursor: pointer;
+            transition: color 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+        }
+        .camera-switch:hover {
+            color: var(--text);
+        }
+
         .preview-section{display:none;}
         .preview-image{max-width:100%;max-height:420px;display:block;margin:0 auto 24px;border:1px solid var(--border);}
         .button-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
@@ -588,7 +724,7 @@
             <h2 class="section-title" style="margin-top:14px;">Register or verify an image.</h2>
         </div>
         <p class="section-lede">
-            Drop in a PNG or JPEG. Register it to mint a provenance record with all five watermark layers, or verify one you've already registered.
+            <strong>Register</strong> your image to create a permanent proof of ownership. <strong>Verify</strong> any image to check if it's authentic and untampered.
         </p>
     </div>
 </div>
@@ -603,6 +739,25 @@
             <h3>Upload an image</h3>
             <p>Drag &amp; drop or click to select · PNG, JPG, WebP · up to 16&nbsp;MB</p>
             <input type="file" id="fileInput" accept="image/*">
+            <div class="upload-divider"><span>or</span></div>
+            <button type="button" class="btn-camera" id="cameraBtn">📷 Take a photo</button>
+        </div>
+
+        <!-- Camera viewfinder modal (hidden by default) -->
+        <div class="camera-modal" id="cameraModal">
+            <div class="camera-inner">
+                <div class="camera-header">
+                    <span>Camera Viewfinder</span>
+                    <button type="button" class="camera-close" id="cameraClose">✕</button>
+                </div>
+                <video id="cameraVideo" autoplay playsinline></video>
+                <canvas id="cameraCanvas" style="display:none;"></canvas>
+                <div class="camera-controls">
+                    <button type="button" class="camera-switch" id="cameraSwitchBtn" title="Switch camera">🔄</button>
+                    <button type="button" class="camera-snap" id="cameraSnapBtn" title="Capture photo"></button>
+                    <div style="width: 40px;"></div> <!-- Spacer to balance layout -->
+                </div>
+            </div>
         </div>
 
         <!-- Preview + actions -->
@@ -621,23 +776,23 @@
             <div class="layer-list" id="layerList">
                 <div class="layer-item" id="ll0">
                     <svg class="layer-ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="14"/><circle class="ring-progress" cx="18" cy="18" r="14"/></svg>
-                    <div><div class="layer-name">Neural (TrustMark)</div><div class="layer-status">Awaiting…</div></div>
+                    <div><div class="layer-name">AI Pattern Check</div><div class="layer-status">Awaiting…</div></div>
                 </div>
                 <div class="layer-item" id="ll1">
                     <svg class="layer-ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="14"/><circle class="ring-progress" cx="18" cy="18" r="14"/></svg>
-                    <div><div class="layer-name">DCT Block QIM</div><div class="layer-status">Awaiting…</div></div>
+                    <div><div class="layer-name">Frequency Analysis</div><div class="layer-status">Awaiting…</div></div>
                 </div>
                 <div class="layer-item" id="ll2">
                     <svg class="layer-ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="14"/><circle class="ring-progress" cx="18" cy="18" r="14"/></svg>
-                    <div><div class="layer-name">Tiled Holographic DCT</div><div class="layer-status">Awaiting…</div></div>
+                    <div><div class="layer-name">Fragment Recovery</div><div class="layer-status">Awaiting…</div></div>
                 </div>
                 <div class="layer-item" id="ll3">
                     <svg class="layer-ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="14"/><circle class="ring-progress" cx="18" cy="18" r="14"/></svg>
-                    <div><div class="layer-name">Spatial LSB + ECC</div><div class="layer-status">Awaiting…</div></div>
+                    <div><div class="layer-name">Pixel-Level Check</div><div class="layer-status">Awaiting…</div></div>
                 </div>
                 <div class="layer-item" id="ll4">
                     <svg class="layer-ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="14"/><circle class="ring-progress" cx="18" cy="18" r="14"/></svg>
-                    <div><div class="layer-name">SIFT Homography</div><div class="layer-status">Awaiting…</div></div>
+                    <div><div class="layer-name">Visual Keypoints (Feature Anchor)</div><div class="layer-status">Awaiting…</div></div>
                 </div>
             </div>
         </div>
@@ -721,7 +876,10 @@ const featureCanvas  = document.getElementById('featureCanvas');
 // ═══════════════════════════════════════════════
 // UPLOAD / DRAG-DROP
 // ═══════════════════════════════════════════════
-uploadSection.addEventListener('click', () => fileInput.click());
+uploadSection.addEventListener('click', e => {
+    if (e.target.closest('#cameraBtn')) return;
+    fileInput.click();
+});
 uploadSection.addEventListener('dragover', e => { e.preventDefault(); uploadSection.classList.add('dragover'); });
 uploadSection.addEventListener('dragleave', () => uploadSection.classList.remove('dragover'));
 uploadSection.addEventListener('drop', e => {
@@ -774,7 +932,7 @@ function resetLayerRings() {
 let layerTimer = null;
 function startLayerAnimation() {
     resetLayerRings();
-    const labels = ['Extracting neural payload…', 'Reading DCT coefficients…', 'Scanning tiled windows…', 'Checking LSB bits…', 'Running SIFT RANSAC…'];
+    const labels = ['Analyzing AI pattern check…', 'Analyzing frequency signatures…', 'Searching for fragment matches…', 'Verifying pixel security…', 'Matching visual keypoints…'];
     let i = 0;
     function step() {
         if (i >= 5) return;
@@ -884,8 +1042,9 @@ function displayRegistration(data) {
     document.getElementById('resultContent').innerHTML =
         '<div class="status-badge status-verified">REGISTERED</div>' +
         '<p style="color:var(--text-muted);font-size:.92rem;margin-bottom:16px;line-height:1.55;">' +
-        'Your image has been signed with Ed25519, indexed with 1,000 SIFT keypoints, and stamped with five invisible watermark layers. ' +
-        '<strong style="color:var(--text);">Download the stamped image below</strong> — share or store that file. Verify it later by uploading it here.' +
+        '<strong style="color:var(--success); display:block; margin-bottom:8px; font-size:1rem;">Your image is now protected.</strong>' +
+        'We have created a unique digital fingerprint and embedded invisible security marks into your image. ' +
+        '<strong style="color:var(--text);">Download the protected version below</strong> — this is the file you should save and share. You can verify it anytime by uploading it back here.' +
         '</p>' +
         '<div class="info-grid">' +
         infoItem('Record ID', recId.substring(0,12) + '…') +
@@ -900,25 +1059,25 @@ function displayRegistration(data) {
 // DISPLAY — VERIFICATION (ENHANCED)
 // ═══════════════════════════════════════════════
 const STATUS_MAP = {
-    'VERIFIED':          ['status-verified',     '✓', 'VERIFIED'],
-    'VERIFIED_MODIFIED': ['status-modified',      '⚠', 'VERIFIED — MODIFIED'],
+    'VERIFIED':          ['status-verified',     '✓', 'AUTHENTIC'],
+    'VERIFIED_MODIFIED': ['status-modified',      '⚠', 'MODIFIED'],
     'VERIFIED_FRAGMENT': ['status-fragment',      '🔍', 'FRAGMENT IDENTIFIED'],
     'TAMPERED':          ['status-tampered',      '✗', 'TAMPERED'],
-    'UNREGISTERED':      ['status-unregistered',  '—', 'UNREGISTERED'],
-    'verified':          ['status-verified',      '✓', 'VERIFIED'],
-    'verified_modified': ['status-modified',      '⚠', 'VERIFIED — MODIFIED'],
+    'UNREGISTERED':      ['status-unregistered',  '—', 'NOT REGISTERED'],
+    'verified':          ['status-verified',      '✓', 'AUTHENTIC'],
+    'verified_modified': ['status-modified',      '⚠', 'MODIFIED'],
     'verified_fragment': ['status-fragment',      '🔍', 'FRAGMENT IDENTIFIED'],
     'tampered':          ['status-tampered',      '✗', 'TAMPERED'],
-    'not_found':         ['status-unregistered',  '—', 'NOT FOUND'],
+    'not_found':         ['status-unregistered',  '—', 'NOT REGISTERED'],
 };
 const LAYER_LABELS = {
-    neural_trustmark: 'Neural TrustMark',
-    dct_block_qim:    'DCT Block QIM',
-    dct_frequency:    'DCT Frequency',
-    tiled_dct:        'Tiled Holographic',
-    spatial_lsb:      'Spatial LSB+ECC',
-    tamper_grid:      'Tamper Grid',
-    feature_anchor:   'Feature Anchor',
+    neural_trustmark: 'AI Pattern Check',
+    dct_block_qim:    'Frequency Analysis',
+    dct_frequency:    'Frequency Analysis',
+    tiled_dct:        'Fragment Recovery',
+    spatial_lsb:      'Pixel-Level Check',
+    tamper_grid:      'Tamper Detection',
+    feature_anchor:   'Visual Keypoints',
 };
 const LAYER_ICONS = {
     neural_trustmark: '🧠',
@@ -931,13 +1090,21 @@ const LAYER_ICONS = {
 };
 const LAYER_ORDER = ['neural_trustmark','dct_block_qim','dct_frequency','tiled_dct','spatial_lsb','tamper_grid','feature_anchor'];
 const MATCH_TYPE_LABELS = {
-    c2pa: 'C2PA Manifest',
-    hydra_neural: 'Neural Watermark',
-    phash: 'pHash Fallback',
-    wide_phash: 'Wide pHash',
-    tiled_dct: 'Tiled DCT',
-    feature_anchor: 'Feature Anchor',
-    sift: 'SIFT Homography',
+    c2pa: 'C2PA Signature',
+    hydra_neural: 'Neural Security Mark',
+    phash: 'Visual Signature Match',
+    wide_phash: 'Visual Signature Match',
+    tiled_dct: 'Fragment Recovery Layer',
+    feature_anchor: 'Visual Keypoint Match',
+    sift: 'Visual Keypoint Alignment',
+};
+
+const VERDICT_EXPLANATIONS = {
+    'VERIFIED': '✅ <strong>This image is authentic.</strong> It matches a registered image exactly. The invisible security marks are intact and untampered.',
+    'VERIFIED_MODIFIED': '⚠️ <strong>This image looks like a registered image, but it has been changed.</strong> The visual content matches our records, but the invisible security marks are missing or damaged — likely due to compression, screenshots, or editing.',
+    'VERIFIED_FRAGMENT': '🔍 <strong>This is a cropped piece of a registered image.</strong> We identified it by matching visual patterns from the original. The crop destroyed the invisible marks, but we can still confirm where it came from.',
+    'TAMPERED': '🚫 <strong>Warning: This image shows signs of tampering.</strong> The security marks do not match the visual content, which suggests parts of this image may have been altered or spliced from different sources.',
+    'UNREGISTERED': '❓ <strong>This image is not in our system.</strong> We have no record of it being registered. This doesn\'t mean it is fake — it simply hasn\'t been protected with PROVENA yet.'
 };
 
 function displayVerification(data) {
@@ -956,15 +1123,18 @@ function displayVerification(data) {
         html += '<div><span class="match-tag">' + (MATCH_TYPE_LABELS[data.match_type] || data.match_type) + '</span></div>';
     }
 
+    // ── Human-readable Explanation
+    const statusKey = status.toUpperCase();
+    const explanation = VERDICT_EXPLANATIONS[statusKey] || VERDICT_EXPLANATIONS['UNREGISTERED'];
+    html += '<p style="color:var(--text-muted);font-size:.92rem;margin-top:16px;margin-bottom:16px;line-height:1.55;">' + explanation + '</p>';
+
     // ── Fragment identification note
     const sLower = status.toLowerCase();
     if (sLower === 'verified_fragment') {
         const matchCount = data.feature_match ? (data.feature_match.match_count || data.feature_match.inliers || '?') : '?';
         const matchConf = data.feature_match ? Math.round((data.feature_match.confidence || 0) * 100) : 0;
-        html += '<div class="fragment-note">' +
-            '🔍 <strong>Fragment Identification</strong> — No watermark survived the crop, but the ' +
-            '<strong>SIFT Feature Anchor</strong> matched ' + matchCount + ' geometric keypoints with ' +
-            matchConf + '% confidence. This is a <em>partial screenshot</em> or cropped version of a registered image.' +
+        html += '<div class="fragment-note" style="border-left: 2px solid var(--accent); padding-left: 12px; margin-top: 10px; color: var(--text-muted); font-size: 0.88rem;">' +
+            'Matched <strong>' + matchCount + ' keypoints</strong> with <strong>' + matchConf + '% confidence</strong> via visual alignment.' +
             '</div>';
     }
 
@@ -974,9 +1144,9 @@ function displayVerification(data) {
     html += infoItem('Confidence', conf);
     if (data.model_id) html += infoItem('Model', data.model_id);
     if (data.registered_at) html += infoItem('Registered', fmtDate(data.registered_at));
-    html += infoItem('Watermark', v.watermark_extracted ? '✓ extracted' : '✗ not found');
-    html += infoItem('C2PA Signature', v.c2pa_valid || v.signature_valid ? '✓ valid' : '✗ absent');
-    html += infoItem('pHash Match', v.perceptual_match ? '✓ match' : '✗ no match');
+    html += infoItem('Security marks', v.watermark_extracted ? '✓ found & verified' : '✗ not detected');
+    html += infoItem('Digital signature', v.c2pa_valid || v.signature_valid ? '✓ verified' : '✗ not present');
+    html += infoItem('Visual match', v.perceptual_match ? '✓ confirmed' : '✗ no match found');
     html += '</div>';
 
     // ── Layer confidence bars (animated)
@@ -1196,7 +1366,107 @@ downloadBtn.addEventListener('click', () => {
 const revealObs = new IntersectionObserver(entries => {
     entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); revealObs.unobserve(e.target); } });
 }, { threshold: 0.1 });
-document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));// ── CAMERA FUNCTIONALITY ───────────────────────
+let cameraStream = null;
+let cameraFacingMode = 'environment';
+
+const cameraModal = document.getElementById('cameraModal');
+const cameraVideo = document.getElementById('cameraVideo');
+const cameraCanvas = document.getElementById('cameraCanvas');
+const cameraBtn = document.getElementById('cameraBtn');
+const cameraClose = document.getElementById('cameraClose');
+const cameraSnapBtn = document.getElementById('cameraSnapBtn');
+const cameraSwitchBtn = document.getElementById('cameraSwitchBtn');
+
+async function openCamera() {
+    try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            alert("Camera is not supported in this browser.");
+            return;
+        }
+        closeCamera();
+        const constraints = {
+            video: {
+                facingMode: cameraFacingMode,
+                width: { ideal: 1280 },
+                height: { ideal: 960 }
+            },
+            audio: false
+        };
+        cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+        cameraVideo.srcObject = cameraStream;
+        cameraModal.style.display = 'flex';
+    } catch (err) {
+        console.error("Camera access error:", err);
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+            alert("Camera access was denied. Please allow it in your browser settings to use this feature.");
+        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+            alert("No camera found on this device.");
+        } else {
+            alert("Unable to access camera: " + err.message);
+        }
+    }
+}
+
+function closeCamera() {
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+    }
+    cameraVideo.srcObject = null;
+    cameraModal.style.display = 'none';
+}
+
+function snapPhoto() {
+    if (!cameraStream) return;
+    const width = cameraVideo.videoWidth || 640;
+    const height = cameraVideo.videoHeight || 480;
+    cameraCanvas.width = width;
+    cameraCanvas.height = height;
+    
+    const ctx = cameraCanvas.getContext('2d');
+    if (cameraFacingMode === 'user') {
+        ctx.translate(width, 0);
+        ctx.scale(-1, 1);
+    }
+    ctx.drawImage(cameraVideo, 0, 0, width, height);
+    if (cameraFacingMode === 'user') {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+    }
+
+    const dataURL = cameraCanvas.toDataURL('image/jpeg', 0.95);
+    previewImgSrc = dataURL;
+    currentImageData = dataURL.split(',')[1];
+    previewImage.src = dataURL;
+    
+    uploadSection.style.display = 'none';
+    previewSection.style.display = 'block';
+    resultsSection.style.display = 'none';
+    
+    closeCamera();
+}
+
+async function switchCamera() {
+    cameraFacingMode = (cameraFacingMode === 'user') ? 'environment' : 'user';
+    if (cameraStream) {
+        await openCamera();
+    }
+}
+
+cameraBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openCamera();
+});
+
+cameraClose.addEventListener('click', closeCamera);
+cameraSnapBtn.addEventListener('click', snapPhoto);
+cameraSwitchBtn.addEventListener('click', switchCamera);
+
+cameraModal.addEventListener('click', (e) => {
+    if (e.target === cameraModal) {
+        closeCamera();
+    }
+});
 
 // ═══════════════════════════════════════════════
 // ANIME.JS — hero entrance + stat counters + particles
