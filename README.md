@@ -1,3 +1,13 @@
+---
+title: Provena
+emoji: 🔒
+colorFrom: red
+colorTo: black
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # PROVENA-FLASK: HydraWatermark V4
 
 **AI Image Provenance, SIFT-Homography & Multi-Layer Forensic Verification System**
